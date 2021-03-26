@@ -1,0 +1,146 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
+using UltraMapper.Conventions;
+using UltraMapper.Internals;
+using UltraMapper.MappingExpressionBuilders;
+
+namespace UltraMapper.Json.UltraMapper.Extensions
+{
+    internal class ObjectToJsonMapper : ReferenceMapper
+    {
+        private readonly SourceMemberProvider _sourceMemberProvider = new SourceMemberProvider()
+        {
+            IgnoreFields = true,
+            IgnoreMethods = true,
+            IgnoreNonPublicMembers = true,
+        };
+
+        public ObjectToJsonMapper( Configuration mappingConfiguration )
+            : base( mappingConfiguration ) { }
+
+        public override bool CanHandle( Type source, Type target )
+        {
+            return target == typeof( JsonString );
+        }
+
+        public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+        {
+            var context = this.GetMapperContext( source, target, options );
+            var sourceMembers = this.SelectSourceMembers( source ).OfType<PropertyInfo>().ToArray();
+
+            var indentationParam = Expression.PropertyOrField( context.TargetInstance, nameof( JsonString.Indentation ) );
+
+            var expressions = GetTargetStrings( sourceMembers, context );
+
+            var expression = Expression.Block
+            (
+                Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "{" + Environment.NewLine ) ),
+                Expression.PostIncrementAssign( indentationParam ),
+                Expression.Block( expressions ),
+                Expression.PostDecrementAssign( indentationParam ),
+                Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "}" ) )
+            );
+
+            var delegateType = typeof( Action<,,> ).MakeGenericType(
+                 context.ReferenceTracker.Type, context.SourceInstance.Type,
+                 context.TargetInstance.Type );
+
+            return Expression.Lambda( delegateType, expression,
+                context.ReferenceTracker, context.SourceInstance, context.TargetInstance );
+        }
+
+        readonly Expression<Action<JsonString, string>> _appendText = ( sb, text ) => AppendText( sb, text );
+        private static void AppendText( JsonString sb, string text )
+        {
+            sb.Json.Append( text );
+        }
+
+        readonly Expression<Action<JsonString, string>> _appendLine = ( sb, text ) => AppendLine( sb, text );
+        private static void AppendLine( JsonString sb, string text )
+        {
+            sb.Json.Append( sb.IndentationString );
+            sb.Json.Append( text );
+        }
+
+        readonly Expression<Action<JsonString, string, string>> _appendMemberNameValue =
+            ( sb, memberName, memberValue ) => AppendMemberNameValue( sb, memberName, memberValue );
+
+        private static void AppendMemberNameValue( JsonString sb, string memberName, string memberValue )
+        {
+            sb.Json.Append( sb.IndentationString );
+            sb.Json.Append( memberName ).Append( " : " );
+            sb.Json.Append( memberValue ).Append( "," );
+            sb.Json.AppendLine();
+        }
+
+        readonly Expression<Action<JsonString, string>> _appendMemberName =
+            ( sb, memberName ) => AppendMemberName( sb, memberName );
+
+        private static void AppendMemberName( JsonString sb, string memberName )
+        {
+            sb.Json.Append( sb.IndentationString );
+            sb.Json.Append( memberName ).Append( " :" );
+            sb.Json.AppendLine();
+        }
+
+        private IEnumerable<Expression> GetTargetStrings( PropertyInfo[] targetMembers,
+            ReferenceMapperContext context )
+        {
+            for( int i = 0; i < targetMembers.Length; i++ )
+            {
+                var item = targetMembers[ i ];
+
+                //It is important to check array/collections after built-in types
+                //(ie: string implements IEnumerable<char>)
+
+                LambdaExpression toStringExp = null;
+
+                if( item.PropertyType.IsBuiltIn( true ) )
+                {
+                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( string ) ].MappingExpression;
+
+                    var memberAccess = Expression.Property( context.SourceInstance, item );
+
+                    yield return Expression.Invoke( _appendMemberNameValue, context.TargetInstance,
+                        Expression.Constant( item.Name ),
+                        Expression.Invoke( toStringExp, memberAccess ) );
+                }
+                else if( item.PropertyType.IsEnumerable() )
+                {
+                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+                }
+                else
+                {
+                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+                    var memberAccess = Expression.Property( context.SourceInstance, item );
+
+                    yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
+                    yield return Expression.Invoke( toStringExp, context.ReferenceTracker, memberAccess, context.TargetInstance );
+                    if( i != targetMembers.Length - 1 )
+                        yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( "," + Environment.NewLine ) );
+                    else 
+                        yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( Environment.NewLine, typeof( string ) ) );
+                }
+            }
+        }
+
+        protected MemberInfo[] SelectSourceMembers( Type sourceType )
+        {
+            return _sourceMemberProvider.GetMembers( sourceType )
+                .Select( ( m, index ) => new
+                {
+                    Member = m,
+                    Options = m.GetCustomAttribute<OutOptionsAttribute>() ??
+                            new OutOptionsAttribute() {/*Order = index*/ }
+                } )
+                .Where( m => !m.Options.IsIgnored )
+                .OrderBy( info => info.Options.Order )
+                .Select( m => m.Member )
+                .ToArray();
+        }
+    }
+}

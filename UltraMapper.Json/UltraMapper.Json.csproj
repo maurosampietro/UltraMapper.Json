@@ -13,7 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UltraMapper.Parsing\UltraMapper.Parsing.csproj" />
+    <ProjectReference Include="..\..\UltraMapper.Parsing\UltraMapper.Parsing\UltraMapper.Parsing.csproj" />
+    <ProjectReference Include="..\..\UltraMapper\UltraMapper\UltraMapper.csproj" />
   </ItemGroup>
 
 </Project>

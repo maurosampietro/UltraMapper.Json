@@ -78,7 +78,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UltraMapper.CommandLine\UltraMapper.CommandLine\UltraMapper.CommandLine.csproj">
+    <ProjectReference Include="..\..\UltraMapper.CommandLine\UltraMapper.CommandLine\UltraMapper.CommandLine.csproj">
       <Project>{EE74CDC4-8A96-4B30-9A50-5A0897B1F161}</Project>
       <Name>UltraMapper.CommandLine</Name>
     </ProjectReference>

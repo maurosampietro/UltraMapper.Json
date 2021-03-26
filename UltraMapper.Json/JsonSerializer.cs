@@ -1,15 +1,17 @@
 ﻿using System;
-using System.Reflection;
-using System.Text;
+using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
+using UltraMapper.Json.UltraMapper.Extensions;
 using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
 using UltraMapper.Parsing.Extensions;
 
 namespace UltraMapper.Json
 {
-    public class JsonSerializer
+    public sealed class JsonSerializer
     {
+        private readonly JsonString _jsonString = new JsonString();
+
         public Mapper Mapper = new Mapper( cfg =>
         {
             cfg.IsReferenceTrackingEnabled = false;
@@ -17,90 +19,57 @@ namespace UltraMapper.Json
 
             cfg.Conventions.GetOrAdd<DefaultConvention>( rule =>
             {
+                rule.SourceMemberProvider.IgnoreFields = true;
+                rule.SourceMemberProvider.IgnoreMethods = true;
+                rule.SourceMemberProvider.IgnoreNonPublicMembers = true;
+
+                rule.TargetMemberProvider.IgnoreFields = true;
                 rule.TargetMemberProvider.IgnoreMethods = true;
                 rule.TargetMemberProvider.IgnoreNonPublicMembers = true;
             } );
+
+            cfg.Mappers.InsertRangeAfter<ReferenceMapper>( new IMappingExpressionBuilder[]
+            {
+                new ArrayParamExpressionBuilder( cfg ),
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
+                new SimpleParamExpressionBuilder( cfg ),
+                new ObjectToJsonMapper(cfg)
+            } );
         } );
 
-        public JsonParser Parser = new JsonParser();
+        private readonly JsonParser Parser = new JsonParser();
 
-        StringBuilder sb = new StringBuilder();
-
-        public JsonSerializer()
-        {
-            int index = Mapper.MappingConfiguration.Mappers.FindIndex( m => m is ReferenceMapper );
-
-            Mapper.MappingConfiguration.Mappers.InsertRange( index, new IMappingExpressionBuilder[]
-            {
-                new ArrayParamExpressionBuilder( Mapper.MappingConfiguration ),
-                new ComplexParamExpressionBuilder( Mapper.MappingConfiguration ){ CanMapByIndex = false },
-                new SimpleParamExpressionBuilder( Mapper.MappingConfiguration )
-            } );
-        }
-
-        int Convert( int o )
-        {
-            sb.AppendLine( o.ToString() );
-            return o;
-        }
-
-        string Convert( string o )
-        {
-            sb.AppendLine( o.ToString() );
-            return o;
-        }
-
-        public string Serialize( object obj )
-        {
-            Mapper.MappingConfiguration.MapTypes<object, object>( o => sb.AppendLine( o.ToString() ) );
-            Mapper.MappingConfiguration.MapTypes<int, int>( o => Convert( o ) );
-            Mapper.MappingConfiguration.MapTypes<string, string>( o => Convert( o ) );
-
-            var duplicate = Mapper.Map( obj );
-
-            return sb.ToString();
-        }
+        private Type lastMapType = null;
+        private Action<ReferenceTracker, object, object> _map = null;
 
         public T Deserialize<T>( string str ) where T : class, new()
         {
             return this.Deserialize( str, new T() );
         }
 
-        private Type instanceType = null;
-        private Action<ReferenceTracker, object, object> _map = null;
-
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public T Deserialize<T>( string str, T instance ) where T : class
         {
             var parsedContent = this.Parser.Parse( str );
 
-            if( instanceType != typeof( T ) )
+            if( lastMapType != typeof( T ) )
             {
-                instanceType = typeof( T );
-                _map = this.Mapper.MappingConfiguration[ typeof( ComplexParam ),
-                        typeof( T ) ].MappingFunc;
+                lastMapType = typeof( T );
+                _map = this.Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
             _map( null, parsedContent, instance );
-          
+
             return instance;
         }
+
+        public string Serialize<T>( T instance )
+        {
+            _jsonString.Json.Clear();
+
+            var map = this.Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;            
+            map( null, instance, _jsonString );
+            return _jsonString.Json.ToString();
+        }
     }
-
-    public interface ISerializationFormat
-    {
-        string MemberFormat( MemberInfo mi, object value );
-    }
-
-    //public class JsonSerializer : ISerializationFormat
-    //{
-    //    public bool QuotePropertyNames { get; set; }
-
-    //    public string MemberFormat( MemberInfo mi, object value )
-    //    {
-    //        if( mi.ReflectedType == typeof( string ) )
-    //            return $"\"{mi.Name}\":\"{value}\"";
-
-    //        return $"\"{mi.Name}\":{value}";
-    //    }
-    //}
 }
