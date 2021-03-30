@@ -11,6 +11,7 @@ namespace UltraMapper.Json
     public sealed class JsonSerializer
     {
         private readonly JsonString _jsonString = new JsonString();
+        private readonly JsonParserWithSubstrings Parser = new JsonParserWithSubstrings();
 
         public Mapper Mapper = new Mapper( cfg =>
         {
@@ -22,7 +23,7 @@ namespace UltraMapper.Json
                 rule.SourceMemberProvider.IgnoreFields = true;
                 rule.SourceMemberProvider.IgnoreMethods = true;
                 rule.SourceMemberProvider.IgnoreNonPublicMembers = true;
-
+                
                 rule.TargetMemberProvider.IgnoreFields = true;
                 rule.TargetMemberProvider.IgnoreMethods = true;
                 rule.TargetMemberProvider.IgnoreNonPublicMembers = true;
@@ -37,7 +38,6 @@ namespace UltraMapper.Json
             } );
         } );
 
-        private readonly JsonParser Parser = new JsonParser();
 
         private Type lastMapType = null;
         private Action<ReferenceTracker, object, object> _map = null;
@@ -59,7 +59,6 @@ namespace UltraMapper.Json
             }
 
             _map( null, parsedContent, instance );
-
             return instance;
         }
 

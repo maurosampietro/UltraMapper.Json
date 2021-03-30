@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Runtime.CompilerServices;
 using UltraMapper.Parsing;
 
 namespace UltraMapper.Json
 {
-    public class JsonParser : IParser
+    public class JsonParserWithSubstrings : IParser
     {
         private enum ParseObjectState { PARAM_NAME, PARAM_VALUE }
 
@@ -18,10 +18,8 @@ namespace UltraMapper.Json
         private const char QUOTE_SYMBOL = '"';
         private const char ESCAPE_SYMBOL = '\\';
 
-        private readonly StringBuilder _paramValue = new StringBuilder( 64 );
-        private readonly StringBuilder _paramName = new StringBuilder( 64 );
-        private readonly StringBuilder _itemValue = new StringBuilder( 64 );
-        private readonly StringBuilder _quotedText = new StringBuilder( 64 );
+        private string _paramValue = String.Empty;
+        private string _paramName = String.Empty;
 
         private char _currentChar;
 
@@ -60,7 +58,6 @@ namespace UltraMapper.Json
             ref int i, ParseObjectState state )
         {
             var parsedParams = new List<IParsedParam>();
-            bool isAdded = false;
 
             for( ; true; i++ )
             {
@@ -69,6 +66,7 @@ namespace UltraMapper.Json
                 if( Char.IsWhiteSpace( _currentChar ) )
                     continue;
 
+                int startIndex;
                 switch( state )
                 {
                     case ParseObjectState.PARAM_NAME:
@@ -85,7 +83,7 @@ namespace UltraMapper.Json
                                 case QUOTE_SYMBOL:
                                 {
                                     i++;
-                                    ParseQuotation( text, ref i, _paramName );
+                                    _paramName = ParseQuotation( text, ref i );
 
                                     for( ; true; i++ )
                                     {
@@ -106,8 +104,8 @@ namespace UltraMapper.Json
                                 {
                                     return new ComplexParam()
                                     {
-                                        Name = _paramName.ToString(),
-                                        SubParams = null
+                                        Name = _paramName,
+                                        SubParams = parsedParams.ToArray()
                                     };
                                 }
 
@@ -118,8 +116,7 @@ namespace UltraMapper.Json
 
                                 default:
                                 {
-                                    _paramName.Append( _currentChar );
-
+                                    startIndex = i;
                                     for( i++; true; i++ )
                                     {
                                         _currentChar = text[ i ];
@@ -129,12 +126,13 @@ namespace UltraMapper.Json
 
                                         if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
                                             break;
-
-                                        _paramName.Append( _currentChar );
                                     }
+
+                                    _paramName = text.Substring( startIndex, i - startIndex );
 
                                     state = ParseObjectState.PARAM_VALUE;
                                     i--;
+
                                     break;
                                 }
                             }
@@ -157,18 +155,16 @@ namespace UltraMapper.Json
                                 case QUOTE_SYMBOL:
                                 {
                                     i++;
-                                    ParseQuotation( text, ref i, _paramValue );
 
                                     var simpleParam = new SimpleParam()
                                     {
-                                        Name = _paramName.ToString(),
-                                        Value = _paramValue.ToString()
+                                        Name = _paramName,
+                                        Value = ParseQuotation( text, ref i )
                                     };
 
-                                    _paramName.Clear();
-                                    _paramValue.Clear();
-
                                     parsedParams.Add( simpleParam );
+
+                                    _paramName = String.Empty;
 
                                     for( i++; true; i++ )
                                     {
@@ -189,7 +185,6 @@ namespace UltraMapper.Json
                                             continue;
                                         else
                                         {
-                                            isAdded = false;
                                             state = ParseObjectState.PARAM_NAME;
                                             i -= 2;
                                             break;
@@ -205,12 +200,12 @@ namespace UltraMapper.Json
                                     {
                                         var simpleParam = new SimpleParam()
                                         {
-                                            Name = _paramName.ToString(),
-                                            Value = _paramValue.ToString()
+                                            Name = _paramName,
+                                            Value = _paramValue
                                         };
 
-                                        _paramName.Clear();
-                                        _paramValue.Clear();
+                                        _paramName = String.Empty;
+                                        _paramValue = String.Empty;
 
                                         parsedParams.Add( simpleParam );
                                     }
@@ -234,7 +229,6 @@ namespace UltraMapper.Json
                                             continue;
                                         else
                                         {
-                                            isAdded = false;
                                             state = ParseObjectState.PARAM_NAME;
                                             i -= 2;
                                             break;
@@ -246,8 +240,8 @@ namespace UltraMapper.Json
                                 case OBJECT_START_SYMBOL:
                                 {
                                     i++;
-                                    string paramName2 = _paramName.ToString();
-                                    _paramName.Clear();
+                                    string paramName2 = _paramName;
+                                    _paramName = String.Empty;
 
                                     var result = ParseObject( text, ref i, ParseObjectState.PARAM_NAME );
                                     parsedParams.Add( new ComplexParam()
@@ -255,22 +249,11 @@ namespace UltraMapper.Json
                                         Name = paramName2,
                                         SubParams = result.SubParams
                                     } );
-
-                                    isAdded = true;
                                     break;
                                 }
 
                                 case OBJECT_END_SYMBOL:
                                 {
-                                    if( !isAdded )
-                                    {
-                                        parsedParams.Add( new SimpleParam()
-                                        {
-                                            Name = _paramName.ToString(),
-                                            Value = _paramValue.ToString()
-                                        } );
-                                    }
-
                                     return new ComplexParam()
                                     {
                                         Name = String.Empty,
@@ -282,20 +265,39 @@ namespace UltraMapper.Json
                                 {
                                     i++;
 
-                                    string paramname2 = _paramName.ToString();
-                                    _paramName.Clear();
+                                    string paramname2 = _paramName;
+                                    _paramName = String.Empty;
 
                                     var result = ParseArray( text, ref i );
                                     result.Name = paramname2;
                                     parsedParams.Add( result );
-
-                                    isAdded = true;
                                     break;
                                 }
 
                                 default:
                                 {
-                                    _paramValue.Append( _currentChar );
+                                    while( Char.IsWhiteSpace( _currentChar ) )
+                                        _currentChar = text[ i++ ];
+
+                                    startIndex = i;
+                                    for( ; true; i++ )
+                                    {
+                                        _currentChar = text[ i ];
+
+                                        if( Char.IsWhiteSpace( _currentChar ) )
+                                            break;
+
+                                        if( _currentChar == PARAMS_DELIMITER )
+                                            break;
+                                    }
+
+                                    parsedParams.Add( new SimpleParam()
+                                    {
+                                        Name = _paramName,
+                                        Value = text.Substring( startIndex, i - startIndex )
+                                    } );
+
+                                    state = ParseObjectState.PARAM_NAME;
                                     break;
                                 }
                             }
@@ -326,8 +328,8 @@ namespace UltraMapper.Json
                     {
                         i++;
 
-                        var obj = ParseObject( text, ref i, ParseObjectState.PARAM_NAME );
-                        items.Add( obj );
+                        var complexParam = ParseObject( text, ref i, ParseObjectState.PARAM_NAME );
+                        items.Add( complexParam );
 
                         break;
                     }
@@ -346,37 +348,33 @@ namespace UltraMapper.Json
                     {
                         i++;
 
-                        ParseQuotation( text, ref i, _quotedText );
-                        items.Add( new SimpleParam() { Value = _quotedText.ToString() } );
+                        items.Add( new SimpleParam()
+                        {
+                            Value = ParseQuotation( text, ref i )
+                        } );
 
                         break;
                     }
 
                     case PARAMS_DELIMITER:
                     {
-                        if( _itemValue.Length > 0 )
-                        {
-                            items.Add( new SimpleParam() { Value = _itemValue.ToString() } );
-                            _itemValue.Clear();
-                        }
-
                         break;
                     }
 
                     case ARRAY_END_SYMBOL:
                     {
-                        if( _itemValue.Length > 0 )
-                        {
-                            items.Add( new SimpleParam() { Value = _itemValue.ToString() } );
-                            _itemValue.Clear();
-                        }
-
                         return items;
                     }
 
                     default:
                     {
-                        _itemValue.Append( _currentChar );
+                        items.Add( new SimpleParam()
+                        {
+                            Value = ParseValue( text, ref i )
+                        } );
+
+                        i--;
+
                         break;
                     }
                 }
@@ -385,10 +383,10 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{ARRAY_END_SYMBOL}'" );
         }
 
-        private void ParseQuotation( string text, ref int i, StringBuilder _quotedText )
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        private string ParseQuotation( string text, ref int i )
         {
-            _quotedText.Clear();
-
+            int startIndex = i;
             for( ; true; i++ )
             {
                 _currentChar = text[ i ];
@@ -397,48 +395,78 @@ namespace UltraMapper.Json
                 {
                     case ESCAPE_SYMBOL:
                     {
+                        throw new NotImplementedException();
                         _currentChar = text[ ++i ];
 
-                        switch( _currentChar )
-                        {
-                            case 'b': _quotedText.Append( '\b' ); break;
-                            case 'f': _quotedText.Append( '\f' ); break;
-                            case 'n': _quotedText.Append( '\n' ); break;
-                            case 'r': _quotedText.Append( '\r' ); break;
-                            case 't': _quotedText.Append( '\t' ); break;
-                            case 'u':
-                            {
-                                i++;
+                        //switch( _currentChar )
+                        //{
+                        //    case 'b': _quotedText.Append( '\b' ); break;
+                        //    case 'f': _quotedText.Append( '\f' ); break;
+                        //    case 'n': _quotedText.Append( '\n' ); break;
+                        //    case 'r': _quotedText.Append( '\r' ); break;
+                        //    case 't': _quotedText.Append( '\t' ); break;
+                        //    case 'u':
+                        //    {
+                        //        i++;
 
-                                string unicodeLiteral = text.Substring( i, 4 );
+                        //        string unicodeLiteral = text.Substring( i, 4 );
 
-                                i += 3;
+                        //        i += 3;
 
-                                int code = Int32.Parse( unicodeLiteral, System.Globalization.NumberStyles.HexNumber );
-                                string unicodeChar = Char.ConvertFromUtf32( code );
-                                _quotedText.Append( unicodeChar );
+                        //        int code = Int32.Parse( unicodeLiteral, System.Globalization.NumberStyles.HexNumber );
+                        //        string unicodeChar = Char.ConvertFromUtf32( code );
+                        //        _quotedText.Append( unicodeChar );
 
-                                break;
-                            }
-
-                            default:
-                            {
-                                _quotedText.Append( _currentChar );
-                                break;
-                            }
-                        }
+                        //        break;
+                        //    }
+                        //}
 
                         break;
                     }
 
                     case QUOTE_SYMBOL:
                     {
-                        return;
+                        return text.Substring( startIndex, i - startIndex );
+                    }
+                }
+            }
+
+            throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
+        }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        private string ParseValue( string text, ref int i )
+        {
+            int startIndex = i;
+            bool isParsingValue = false;
+
+            for( ; i < text.Length; i++ )
+            {
+                _currentChar = text[ i ];
+
+                if( Char.IsWhiteSpace( _currentChar ) )
+                {
+                    if( isParsingValue )
+                        return text.Substring( startIndex, i - startIndex );
+
+                    startIndex++;
+                    continue;
+                }
+
+                switch( _currentChar )
+                {
+                    case PARAMS_DELIMITER:
+                    case OBJECT_END_SYMBOL:
+                    case ARRAY_END_SYMBOL:
+                    {
+                        return text.Substring( startIndex, i - startIndex );
                     }
 
                     default:
                     {
-                        _quotedText.Append( _currentChar );
+                        if( !isParsingValue )
+                            isParsingValue = true;
+
                         break;
                     }
                 }

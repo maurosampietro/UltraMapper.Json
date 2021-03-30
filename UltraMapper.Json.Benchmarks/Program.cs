@@ -5,9 +5,9 @@ using System.Diagnostics;
 
 namespace UltraMapper.Json.Benchmarks
 {
-	//- STRING TO DATETIME CONVERSION PROBLEMS
+    //- STRING TO DATETIME CONVERSION PROBLEMS
 
-	class Program
+    class Program
 	{
 		public class Account
 		{
@@ -73,12 +73,12 @@ namespace UltraMapper.Json.Benchmarks
 			}
 			";
 
-		   // Utf8JsonLibrary( json0 );
+		    //Utf8JsonLibrary( json0 );
 			UltraMapper<Account>( json0 );
 			Newtonsoft( json0 );
 			NetJson( json0 );
 
-		 //   Utf8JsonLibrary( json1 );
+		    //Utf8JsonLibrary( json1 );
 			UltraMapper<Item>( json1 );
 			Newtonsoft( json1 );
 			NetJson( json1 );
