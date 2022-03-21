@@ -3,7 +3,7 @@ using System;
 using UltraMapper.Json;
 using UltraMapper.Parsing;
 
-namespace UltraMapper.CommandLine.UnitTest
+namespace UltraMapper.Json.Test
 {
 	[TestClass]
 	public class JsonParserTests
@@ -284,7 +284,7 @@ namespace UltraMapper.CommandLine.UnitTest
 		{
 			string inputJson = @"{ param:""}{\\][\"",:""}";
 
-			var parser = new JsonParserWithStringBuilders();
+			var parser = new JsonParserWithSubstrings();
 			var result = (ComplexParam)parser.Parse( inputJson );
 
 			var param = (SimpleParam)result.SubParams[ 0 ];
@@ -295,16 +295,16 @@ namespace UltraMapper.CommandLine.UnitTest
 
 		[TestMethod]
 		public void QuotationContainsControlChars()
-		{
-			string inputJson = @"{param:""\""\\\/\b\f\n\r\t""}";
+		{		
+			string inputJson = @"{param:""\\\""\b\f\n\r\t""}";
 
-			var parser = new JsonParserWithStringBuilders();
+			var parser = new JsonParserWithSubstrings();
 			var result = (ComplexParam)parser.Parse( inputJson );
 
 			var param = (SimpleParam)result.SubParams[ 0 ];
 
 			Assert.IsTrue( param.Name == "param" );
-			Assert.IsTrue( param.Value == "\"\\/\b\f\n\r\t" );
+			Assert.IsTrue( param.Value == "\\\"\b\f\n\r\t" );
 		}
 
 		[TestMethod]
@@ -312,7 +312,7 @@ namespace UltraMapper.CommandLine.UnitTest
 		{
 			string inputJson = @"{param:""\u0030\u0031""}";
 
-			var parser = new JsonParserWithStringBuilders();
+			var parser = new JsonParserWithSubstrings();
 			var result = (ComplexParam)parser.Parse( inputJson );
 
 			var param = (SimpleParam)result.SubParams[ 0 ];

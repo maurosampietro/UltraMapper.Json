@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
 using UltraMapper.Json.UltraMapper.Extensions;
@@ -11,7 +12,14 @@ namespace UltraMapper.Json
     public sealed class JsonSerializer
     {
         private readonly JsonString _jsonString = new JsonString();
+#if NET5_0_OR_GREATER
+        private readonly JsonParserWithReadonlySpan Parser = new JsonParserWithReadonlySpan();
+#else
         private readonly JsonParserWithSubstrings Parser = new JsonParserWithSubstrings();
+#endif
+
+        public CultureInfo Culture { get; set; }
+            = CultureInfo.InvariantCulture;
 
         public Mapper Mapper = new Mapper( cfg =>
         {
@@ -23,24 +31,30 @@ namespace UltraMapper.Json
                 rule.SourceMemberProvider.IgnoreFields = true;
                 rule.SourceMemberProvider.IgnoreMethods = true;
                 rule.SourceMemberProvider.IgnoreNonPublicMembers = true;
-                
+
                 rule.TargetMemberProvider.IgnoreFields = true;
                 rule.TargetMemberProvider.IgnoreMethods = true;
                 rule.TargetMemberProvider.IgnoreNonPublicMembers = true;
             } );
 
-            cfg.Mappers.InsertRangeAfter<ReferenceMapper>( new IMappingExpressionBuilder[]
+            cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
                 new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
-                new ObjectToJsonMapper(cfg)
+                new ObjectToJsonMapper( cfg )
             } );
         } );
 
-
         private Type lastMapType = null;
         private Action<ReferenceTracker, object, object> _map = null;
+
+
+        public JsonSerializer()
+        {
+            this.Mapper.Config.MapTypes<string, DateTime>(
+                s => DateTime.Parse( s, Culture ) );
+        }
 
         public T Deserialize<T>( string str ) where T : class, new()
         {
@@ -66,7 +80,7 @@ namespace UltraMapper.Json
         {
             _jsonString.Json.Clear();
 
-            var map = this.Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;            
+            var map = this.Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
             map( null, instance, _jsonString );
             return _jsonString.Json.ToString();
         }

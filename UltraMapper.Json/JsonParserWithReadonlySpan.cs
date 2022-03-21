@@ -5,7 +5,9 @@ using UltraMapper.Parsing;
 
 namespace UltraMapper.Json
 {
-    public class JsonParserWithSubstrings : IParser
+#if NET5_0_OR_GREATER
+
+    public class JsonParserWithReadonlySpan : IParser
     {
         private enum ParseObjectState { PARAM_NAME, PARAM_VALUE }
 
@@ -70,7 +72,7 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{OBJECT_START_SYMBOL}' or '{ARRAY_START_SYMBOL}'" );
         }
 
-        private ComplexParam ParseObject( string text,
+        private ComplexParam ParseObject( ReadOnlySpan<char> text,
             ref int i, ParseObjectState state )
         {
             var parsedParams = new List<IParsedParam>();
@@ -82,22 +84,78 @@ namespace UltraMapper.Json
                 if( IsWhiteSpace( _currentChar ) )
                     continue;
 
-                if( _currentChar == OBJECT_END_SYMBOL )
-                {
-                    return new ComplexParam()
-                    {
-                        Name = _paramName,
-                        SubParams = parsedParams.ToArray()
-                    };
-                }
-
                 int startIndex;
                 switch( state )
                 {
                     case ParseObjectState.PARAM_NAME:
                     {
-                        _paramName = ParseName( text, ref i );
-                        state = ParseObjectState.PARAM_VALUE;
+                        for( ; state == ParseObjectState.PARAM_NAME; i++ )
+                        {
+                            _currentChar = text[ i ];
+
+                            if( IsWhiteSpace( _currentChar ) )
+                                continue;
+
+                            switch( _currentChar )
+                            {
+                                case QUOTE_SYMBOL:
+                                {
+                                    i++;
+                                    _paramName = ParseQuotation( text, ref i );
+
+                                    for( ; true; i++ )
+                                    {
+                                        _currentChar = text[ i ];
+
+                                        if( IsWhiteSpace( _currentChar ) )
+                                            continue;
+
+                                        if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
+                                            break;
+                                    }
+
+                                    state = ParseObjectState.PARAM_VALUE;
+                                    break;
+                                }
+
+                                case OBJECT_END_SYMBOL:
+                                {
+                                    return new ComplexParam()
+                                    {
+                                        Name = _paramName,
+                                        SubParams = parsedParams.ToArray()
+                                    };
+                                }
+
+                                case PARAMS_DELIMITER:
+                                case OBJECT_START_SYMBOL:
+                                case ARRAY_START_SYMBOL:
+                                    throw new Exception( $"Unexpected symbol '{_currentChar}' at position {i}" );
+
+                                default:
+                                {
+                                    startIndex = i;
+                                    for( i++; true; i++ )
+                                    {
+                                        _currentChar = text[ i ];
+
+                                        if( IsWhiteSpace( _currentChar ) )
+                                            continue;
+
+                                        if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
+                                            break;
+                                    }
+
+                                    _paramName = text[ startIndex..i ].ToString();
+
+                                    state = ParseObjectState.PARAM_VALUE;
+                                    i--;
+
+                                    break;
+                                }
+                            }
+                        }
+
                         break;
                     }
 
@@ -254,7 +312,7 @@ namespace UltraMapper.Json
                                     parsedParams.Add( new SimpleParam()
                                     {
                                         Name = _paramName,
-                                        Value = text.Substring( startIndex, i - startIndex )
+                                        Value = text[ startIndex..i ].ToString()
                                     } );
 
                                     state = ParseObjectState.PARAM_NAME;
@@ -271,7 +329,7 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{OBJECT_END_SYMBOL}'" );
         }
 
-        private ArrayParam ParseArray( string text, ref int i )
+        private ArrayParam ParseArray( ReadOnlySpan<char> text, ref int i )
         {
             var items = new ArrayParam();
 
@@ -344,88 +402,11 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseName( string text, ref int i )
-        {
-            _currentChar = text[ i ];
-
-            if( _currentChar == QUOTE_SYMBOL )
-            {
-                i++;
-                _paramName = ParseQuotation( text, ref i );
-
-                for( i++; true; i++ )
-                {
-                    _currentChar = text[ i ];
-
-                    if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
-                        break;
-                }
-
-                return _paramName;
-            }
-            else
-            {
-                int startIndex = i;
-                for( ; true; i++ )
-                {
-                    _currentChar = text[ i ];
-
-                    if( IsWhiteSpace( _currentChar ) )
-                    {
-                        _paramName = text.Substring( startIndex, i - startIndex );
-
-                        for( i++; true; i++ )
-                        {
-                            _currentChar = text[ i ];
-
-                            if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
-                                break;
-                        }
-
-                        return _paramName;
-                    }
-
-                    if( _currentChar == PARAM_NAME_VALUE_DELIMITER )
-                        return text.Substring( startIndex, i - startIndex );
-                }
-            }
-        }
-
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseValue( string text, ref int i )
-        {
-            int startIndex = i;
-
-            for( ; true; i++ )
-            {
-                _currentChar = text[ i ];
-
-                if( IsWhiteSpace( _currentChar ) )
-                {
-                    startIndex++;
-                    continue;
-                }
-
-                switch( _currentChar )
-                {
-                    case PARAMS_DELIMITER:
-                    case OBJECT_END_SYMBOL:
-                    case ARRAY_END_SYMBOL:
-                    {
-                        return text.Substring( startIndex, i - startIndex );
-                    }
-                }
-            }
-
-            throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
-        }
-
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseQuotation( string text, ref int i )
+        private string ParseQuotation( ReadOnlySpan<char> text, ref int i )
         {
             bool escapeSymbols = false;
             bool unicodeSymbols = false;
-
+          
             int startIndex = i;
             for( ; true; i++ )
             {
@@ -447,7 +428,7 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
-                        var quotation = text.Substring( startIndex, i - startIndex );
+                        var quotation = text[ startIndex..i ].ToString();
 
                         if( escapeSymbols )
                         {
@@ -482,5 +463,43 @@ namespace UltraMapper.Json
 
             throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
         }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        private string ParseValue( ReadOnlySpan<char> text, ref int i )
+        {
+            int startIndex = i;
+            bool isParsingValue = false;
+
+            for( ; i < text.Length; i++ )
+            {
+                _currentChar = text[ i ];
+
+                if( IsWhiteSpace( _currentChar ) )
+                {
+                    startIndex++;
+                    continue;
+                }
+
+                for( ; i < text.Length; i++ )
+                {
+                    _currentChar = text[ i ];
+                    if( IsWhiteSpace( _currentChar ) )
+                        return text[ startIndex..i ].ToString();
+
+                    switch( _currentChar )
+                    {
+                        case PARAMS_DELIMITER:
+                        case OBJECT_END_SYMBOL:
+                        case ARRAY_END_SYMBOL:
+                        {
+                            return text[ startIndex..i ].ToString();
+                        }
+                    }
+                }
+            }
+
+            throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
+        }
     }
+#endif
 }

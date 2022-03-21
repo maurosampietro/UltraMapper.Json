@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UltraMapper.Parsing;
 
@@ -56,7 +57,7 @@ namespace UltraMapper.Json
 
         public unsafe IParsedParam Parse( byte* bytes, string text )
         {
-            for( int i = 0; i < text.Length*2; i+=2 )
+            for( int i = 0; i < text.Length * 2; i += 2 )
             {
                 _currentByte = bytes[ i ];
 
@@ -67,13 +68,13 @@ namespace UltraMapper.Json
                 {
                     case OBJECT_START_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
                         return ParseObject( bytes, text, ref i, ParseObjectState.PARAM_NAME );
                     }
 
                     case ARRAY_START_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
                         return ParseArray( bytes, text, ref i );
                     }
 
@@ -85,19 +86,9 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{OBJECT_START_SYMBOL}' or '{ARRAY_START_SYMBOL}'" );
         }
 
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool IsWhiteSpace( byte c )
         {
-            return IsWhiteSpaceLatin1( c );
-        }
-
-        private static bool IsLatin1( byte ch )
-        {
-            return (ch <= (byte)'\x00ff');
-        }
-
-        private static bool IsWhiteSpaceLatin1( byte c )
-        {
-
             // There are characters which belong to UnicodeCategory.Control but are considered as white spaces.
             // We use code point comparisons for these characters here as a temporary fix.
 
@@ -108,11 +99,7 @@ namespace UltraMapper.Json
             // U+000d = <control> CARRIAGE RETURN
             // U+0085 = <control> NEXT LINE
             // U+00a0 = NO-BREAK SPACE
-            if( (c == (byte)' ') || (c >= (byte)'\x0009' && c <= (byte)'\x000d') || c == (byte)'\x00a0' || c == (byte)'\x0085' )
-            {
-                return (true);
-            }
-            return (false);
+            return (c == (byte)' ') || (c >= (byte)'\x0009' && c <= (byte)'\x000d') || c == (byte)'\x00a0' || c == (byte)'\x0085';
         }
 
         private unsafe ComplexParam ParseObject( byte* bytes, string text,
@@ -121,7 +108,7 @@ namespace UltraMapper.Json
             var parsedParams = new List<IParsedParam>();
             bool isAdded = false;
 
-            for( ; i < text.Length*2; i+=2 )
+            for( ; i < text.Length * 2; i += 2 )
             {
                 _currentByte = bytes[ i ];
 
@@ -132,7 +119,7 @@ namespace UltraMapper.Json
                 {
                     case ParseObjectState.PARAM_NAME:
                     {
-                        for( ; state == ParseObjectState.PARAM_NAME; i+=2 )
+                        for( ; state == ParseObjectState.PARAM_NAME; i += 2 )
                         {
                             _currentByte = bytes[ i ];
 
@@ -143,17 +130,17 @@ namespace UltraMapper.Json
                             {
                                 case QUOTE_SYMBOL:
                                 {
-                                    i+=2;
+                                    i += 2;
                                     ParseQuotation( bytes, text, ref i, _paramName );
                                     state = ParseObjectState.PARAM_VALUE;
-                                    i-=2;
+                                    i -= 2;
                                     break;
                                 }
 
                                 case PARAM_NAME_VALUE_DELIMITER:
                                 {
                                     state = ParseObjectState.PARAM_VALUE;
-                                    i-=2;
+                                    i -= 2;
                                     break;
                                 }
 
@@ -184,7 +171,7 @@ namespace UltraMapper.Json
 
                     case ParseObjectState.PARAM_VALUE:
                     {
-                        for( ; state == ParseObjectState.PARAM_VALUE; i+=2 )
+                        for( ; state == ParseObjectState.PARAM_VALUE; i += 2 )
                         {
                             _currentByte = bytes[ i ];
 
@@ -195,7 +182,7 @@ namespace UltraMapper.Json
                             {
                                 case QUOTE_SYMBOL:
                                 {
-                                    i+=2;
+                                    i += 2;
                                     ParseQuotation( bytes, text, ref i, _paramValue );
 
                                     var simpleParam = new SimpleParam()
@@ -209,7 +196,7 @@ namespace UltraMapper.Json
 
                                     parsedParams.Add( simpleParam );
 
-                                    for( i+=2; true; i+=2 )
+                                    for( i += 2; true; i += 2 )
                                     {
                                         _currentByte = bytes[ i ];
 
@@ -254,7 +241,7 @@ namespace UltraMapper.Json
                                         parsedParams.Add( simpleParam );
                                     }
 
-                                    for( i+=2; true; i+=2 )
+                                    for( i += 2; true; i += 2 )
                                     {
                                         _currentByte = bytes[ i ];
 
@@ -289,7 +276,7 @@ namespace UltraMapper.Json
 
                                 case OBJECT_START_SYMBOL:
                                 {
-                                    i+=2;
+                                    i += 2;
                                     string paramName2 = _paramName.ToString();
                                     _paramName.Clear();
 
@@ -324,7 +311,7 @@ namespace UltraMapper.Json
 
                                 case ARRAY_START_SYMBOL:
                                 {
-                                    i+=2;
+                                    i += 2;
 
                                     string paramname2 = _paramName.ToString();
                                     _paramName.Clear();
@@ -357,7 +344,7 @@ namespace UltraMapper.Json
         {
             var items = new ArrayParam();
 
-            for( ; i < text.Length*2; i+=2 )
+            for( ; i < text.Length * 2; i += 2 )
             {
                 _currentByte = bytes[ i ];
 
@@ -368,7 +355,7 @@ namespace UltraMapper.Json
                 {
                     case OBJECT_START_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
 
                         var obj = ParseObject( bytes, text, ref i, ParseObjectState.PARAM_NAME );
                         items.Add( obj );
@@ -378,7 +365,7 @@ namespace UltraMapper.Json
 
                     case ARRAY_START_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
 
                         var result = ParseArray( bytes, text, ref i );
                         items.Add( result );
@@ -388,7 +375,7 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
 
                         ParseQuotation( bytes, text, ref i, _quotedText );
                         items.Add( new SimpleParam() { Value = _quotedText.ToString() } );
@@ -433,7 +420,7 @@ namespace UltraMapper.Json
         {
             _quotedText.Clear();
 
-            for( ; i < text.Length*2; i+=2 )
+            for( ; i < text.Length * 2; i += 2 )
             {
                 _currentByte = bytes[ i ];
 
@@ -441,7 +428,7 @@ namespace UltraMapper.Json
                 {
                     case ESCAPE_SYMBOL:
                     {
-                        i+=2;
+                        i += 2;
                         _currentByte = bytes[ i ];
 
                         switch( _currentByte )
@@ -453,7 +440,7 @@ namespace UltraMapper.Json
                             case (byte)'t': _quotedText.Append( (byte)'\t' ); break;
                             case (byte)'u':
                             {
-                                i+=2;
+                                i += 2;
 
                                 string unicodeLiteral = String.Empty;
                                 for( int k = 0; k < 4; k++ )
@@ -480,12 +467,12 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
-                        return;                        
+                        return;
                     }
 
                     default:
                     {
-                        _quotedText.Append( _currentByte );                
+                        _quotedText.Append( _currentByte );
                         break;
                     }
                 }

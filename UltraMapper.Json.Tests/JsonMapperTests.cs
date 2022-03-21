@@ -3,61 +3,56 @@ using System.Collections.Generic;
 
 namespace UltraMapper.Json.Test
 {
-    [TestClass]
+	[TestClass]
 	public class JsonMapperTests
 	{
-		//     [TestMethod]
-		//     public void Example1ArrayPrimitiveType()
-		//     {
-		//         string inputJson = "[ 100, 200, 300, 400, 500 ]";
+		//[TestMethod]
+		//public void Example1ArrayPrimitiveType()
+		//{
+		//    string inputJson = "[ 100, 200, 300, 400, 500 ]";
 
-		//         var parser = new JsonParserSerializer();
-		//         var result = parser.Parse<int[]>( inputJson );
+		//    var parser = new JsonSerializer();
+		//    var result = parser.Deserialize<int[]>( inputJson );
 
-		//         Assert.IsTrue( result.Items.Count == 5 );
-		//         Assert.IsTrue( result[ 0 ] == 100 );
-		//         Assert.IsTrue( result[ 1 ] == 200 );
-		//         Assert.IsTrue( result[ 2 ] == 300 );
-		//         Assert.IsTrue( result[ 3 ] == 400 );
-		//         Assert.IsTrue( result[ 4 ] == 500 );
-		//     }
+		//    Assert.IsTrue( result.Length == 5 );
+		//    Assert.IsTrue( result[ 0 ] == 100 );
+		//    Assert.IsTrue( result[ 1 ] == 200 );
+		//    Assert.IsTrue( result[ 2 ] == 300 );
+		//    Assert.IsTrue( result[ 3 ] == 400 );
+		//    Assert.IsTrue( result[ 4 ] == 500 );
+		//}
 
-		//     [TestMethod]
-		//     public void Example2ArrayOfComplexObject()
-		//     {
-		//         string inputJson = @"
-		//[
-		//	{
-		//		color: ""red"",
-		//		value: ""#f00""
-		//	},
-		//	{
-		//		color: ""green"",
-		//		value: ""#0f0""
-		//	},
-		//]";
+		public class ColorValue
+		{
+            public string Color { get; set; }
+            public string Value { get; set; }
+        }
 
-		//         var parser = new JsonParser();
-		//         var result = (ArrayParam)parser.Parse( inputJson );
+        [TestMethod]
+        public void Example2ArrayOfComplexObject()
+        {
+            string inputJson = @"
+		[
+			{
+				color: ""red"",
+				value: ""#f00""
+			},
+			{
+				color: ""green"",
+				value: ""#0f0""
+			},
+		]";
 
-		//         Assert.IsTrue( result.Items.Count == 2 );
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<List<ColorValue>>( inputJson );
 
-		//         var item1 = (ComplexParam)result.Items[ 0 ];
-		//         Assert.IsTrue( ((SimpleParam)item1.SubParams[ 0 ]).Name == "color" );
-		//         Assert.IsTrue( ((SimpleParam)item1.SubParams[ 0 ]).Value == "red" );
+            Assert.IsTrue( result.Count == 2 );
 
-		//         Assert.IsTrue( ((SimpleParam)item1.SubParams[ 1 ]).Name == "value" );
-		//         Assert.IsTrue( ((SimpleParam)item1.SubParams[ 1 ]).Value == "#f00" );
+            Assert.IsTrue( result[0].Value =="#f00" );
+			Assert.IsTrue( result[ 0 ].Value == "#0f0" );
+        }
 
-		//         var item2 = (ComplexParam)result.Items[ 1 ];
-		//         Assert.IsTrue( ((SimpleParam)item2.SubParams[ 0 ]).Name == "color" );
-		//         Assert.IsTrue( ((SimpleParam)item2.SubParams[ 0 ]).Value == "green" );
-
-		//         Assert.IsTrue( ((SimpleParam)item2.SubParams[ 1 ]).Name == "value" );
-		//         Assert.IsTrue( ((SimpleParam)item2.SubParams[ 1 ]).Value == "#0f0" );
-		//     }
-
-		private class Example3Class
+        private class Example3Class
 		{
 			public string UnquotedParam { get; set; }
 			public string QuotedParam { get; set; }
@@ -102,8 +97,8 @@ namespace UltraMapper.Json.Test
 		{
 			string inputJson = @" 
 			{
-				color: ""red"",
-				user:
+				color : ""red"",
+				user :
 				{
 					name:Robert,
 					age:32
@@ -350,7 +345,7 @@ namespace UltraMapper.Json.Test
 			string inputJson = @"
 			{
 				""id"": ""0001"",
-				""ppu"": 0.55,
+				""ppu"": 0.55	,
 
 				""batters"":
 				{

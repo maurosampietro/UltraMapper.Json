@@ -8,7 +8,6 @@ namespace UltraMapper.Json
     //
     //Only one instance of this class will be created per parser instance.
     //This one instance will be reused over and over again to pass data to the ExpressionBuilder.
-    //To further improve performance members inside this class are declared as fields.
     public class JsonString
     {
         public StringBuilder Json = new StringBuilder();
