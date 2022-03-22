@@ -31,16 +31,17 @@ namespace UltraMapper.Json
         {
             fixed( char* bText = str )
             {
-                var bytes = FromString( str );
-                return Parse( bytes );
+                var bytes = ReadonlySpanByteFromString( str );
+                var chars = ReadonlySpanCharFromString( str );
+                return Parse( bytes, chars );
             }
         }
 
-        public IParsedParam Parse( ReadOnlySpan<byte> text )
+        public IParsedParam Parse( ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars )
         {
             for( int i = 0; true; i += 2 )
             {
-                _currentByte = text[ i ];
+                _currentByte = bytes[ i ];
 
                 if( IsWhiteSpace( _currentByte ) )
                     continue;
@@ -50,13 +51,13 @@ namespace UltraMapper.Json
                     case OBJECT_START_SYMBOL:
                     {
                         i += 2;
-                        return ParseObject( text, ref i, ParseObjectState.PARAM_NAME );
+                        return ParseObject( bytes, chars, ref i, ParseObjectState.PARAM_NAME );
                     }
 
                     case ARRAY_START_SYMBOL:
                     {
                         i += 2;
-                        return ParseArray( text, ref i );
+                        return ParseArray( bytes, chars, ref i );
                     }
 
                     default:
@@ -67,10 +68,16 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{OBJECT_START_SYMBOL}' or '{ARRAY_START_SYMBOL}'" );
         }
 
-        private unsafe ReadOnlySpan<byte> FromString( string str )
+        private unsafe ReadOnlySpan<byte> ReadonlySpanByteFromString( string str )
         {
             fixed( char* bText = str )
                 return new ReadOnlySpan<byte>( (byte*)bText, str.Length * 2 );
+        }
+
+        private unsafe ReadOnlySpan<char> ReadonlySpanCharFromString( string str )
+        {
+            fixed( char* bText = str )
+                return new ReadOnlySpan<char>( bText, str.Length );
         }
 
         private const byte c1 = (byte)' ';
@@ -95,7 +102,7 @@ namespace UltraMapper.Json
             return (c == c1) || (c >= c2 && c <= c3) || c == c4 || c == c5;
         }
 
-        private ComplexParam ParseObject( ReadOnlySpan<byte> bytes,
+        private ComplexParam ParseObject( ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars,
             ref int i, ParseObjectState state )
         {
             var parsedParams = new List<IParsedParam>();
@@ -124,7 +131,7 @@ namespace UltraMapper.Json
                                 case QUOTE_SYMBOL:
                                 {
                                     i += 2;
-                                    _paramName = ParseQuotation( bytes, ref i ).ToString();
+                                    _paramName = ParseQuotation( bytes, chars, ref i ).ToString();
 
                                     for( ; true; i++ )
                                     {
@@ -169,7 +176,7 @@ namespace UltraMapper.Json
                                             break;
                                     }
 
-                                    _paramName = bytes[ startIndex..i ].ToString();
+                                    _paramName = chars[ (startIndex / 2)..(i / 2) ].ToString();
 
                                     state = ParseObjectState.PARAM_VALUE;
                                     i -= 2;
@@ -200,7 +207,7 @@ namespace UltraMapper.Json
                                     var simpleParam = new SimpleParam()
                                     {
                                         Name = _paramName,
-                                        Value = ParseQuotation( bytes, ref i ).ToString()
+                                        Value = ParseQuotation( bytes, chars, ref i ).ToString()
                                     };
 
                                     parsedParams.Add( simpleParam );
@@ -284,7 +291,7 @@ namespace UltraMapper.Json
                                     string paramName2 = _paramName;
                                     _paramName = String.Empty;
 
-                                    var result = ParseObject( bytes, ref i, ParseObjectState.PARAM_NAME );
+                                    var result = ParseObject( bytes, chars, ref i, ParseObjectState.PARAM_NAME );
                                     parsedParams.Add( new ComplexParam()
                                     {
                                         Name = paramName2,
@@ -309,7 +316,7 @@ namespace UltraMapper.Json
                                     string paramname2 = _paramName;
                                     _paramName = String.Empty;
 
-                                    var result = ParseArray( bytes, ref i );
+                                    var result = ParseArray( bytes, chars, ref i );
                                     result.Name = paramname2;
                                     parsedParams.Add( result );
                                     break;
@@ -335,7 +342,7 @@ namespace UltraMapper.Json
                                     parsedParams.Add( new SimpleParam()
                                     {
                                         Name = _paramName,
-                                        Value = bytes[ startIndex..i ].ToString()
+                                        Value = chars[ (startIndex / 2)..(i / 2) ].ToString()
                                     } );
 
                                     state = ParseObjectState.PARAM_NAME;
@@ -352,13 +359,13 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{OBJECT_END_SYMBOL}'" );
         }
 
-        private ArrayParam ParseArray( ReadOnlySpan<byte> text, ref int i )
+        private ArrayParam ParseArray( ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars, ref int i )
         {
             var items = new ArrayParam();
 
             for( ; true; i += 2 )
             {
-                _currentByte = text[ i ];
+                _currentByte = bytes[ i ];
 
                 if( IsWhiteSpace( _currentByte ) )
                     continue;
@@ -369,7 +376,7 @@ namespace UltraMapper.Json
                     {
                         i += 2;
 
-                        var complexParam = ParseObject( text, ref i, ParseObjectState.PARAM_NAME );
+                        var complexParam = ParseObject( bytes, chars, ref i, ParseObjectState.PARAM_NAME );
                         items.Add( complexParam );
 
                         break;
@@ -379,7 +386,7 @@ namespace UltraMapper.Json
                     {
                         i += 2;
 
-                        var result = ParseArray( text, ref i );
+                        var result = ParseArray( bytes, chars, ref i );
                         items.Add( result );
 
                         break;
@@ -391,7 +398,7 @@ namespace UltraMapper.Json
 
                         items.Add( new SimpleParam()
                         {
-                            Value = ParseQuotation( text, ref i )
+                            Value = ParseQuotation( bytes, chars, ref i )
                         } );
 
                         break;
@@ -411,7 +418,7 @@ namespace UltraMapper.Json
                     {
                         items.Add( new SimpleParam()
                         {
-                            Value = ParseValue( text, ref i )
+                            Value = ParseValue( bytes, chars, ref i )
                         } );
 
                         i -= 2;
@@ -425,7 +432,7 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseQuotation( ReadOnlySpan<byte> text, ref int i )
+        private string ParseQuotation( ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars, ref int i )
         {
             bool escapeSymbols = false;
             bool unicodeSymbols = false;
@@ -433,15 +440,15 @@ namespace UltraMapper.Json
             int startIndex = i;
             for( ; true; i += 2 )
             {
-                _currentByte = text[ i ];
+                _currentByte = bytes[ i ];
 
                 switch( _currentByte )
                 {
                     case ESCAPE_SYMBOL:
                     {
-                        _currentByte = text[ i ];
                         i += 2;
-
+                        _currentByte = bytes[ i ];
+                     
                         escapeSymbols = true;
 
                         if( _currentByte == 'u' )
@@ -452,7 +459,7 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
-                        var quotation = text[ startIndex..i ].ToString();
+                        var quotation = chars[ (startIndex / 2)..(i / 2) ].ToString();
 
                         if( escapeSymbols )
                         {
@@ -489,19 +496,19 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseValue( ReadOnlySpan<byte> text, ref int i )
+        private string ParseValue( ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars, ref int i )
         {
             int startIndex = i;
             bool isParsingValue = false;
 
-            for( ; i < text.Length; i += 2 )
+            for( ; i < bytes.Length; i += 2 )
             {
-                _currentByte = text[ i ];
+                _currentByte = bytes[ i ];
 
                 if( IsWhiteSpace( _currentByte ) )
                 {
                     if( isParsingValue )
-                        return text[ startIndex..i ].ToString();
+                        return chars[ (startIndex / 2)..(i / 2) ].ToString();
 
                     startIndex++;
                     continue;
@@ -513,7 +520,7 @@ namespace UltraMapper.Json
                     case OBJECT_END_SYMBOL:
                     case ARRAY_END_SYMBOL:
                     {
-                        return text[ startIndex..i ].ToString();
+                        return chars[ (startIndex / 2)..(i / 2) ].ToString();
                     }
 
                     default:

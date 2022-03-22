@@ -5,9 +5,7 @@ using System.Collections.Generic;
 
 namespace UltraMapper.Json.Benchmarks
 {
-    [SimpleJob( RuntimeMoniker.Net462, baseline: true )]
-    [SimpleJob( RuntimeMoniker.Net472 )]
-    [SimpleJob( RuntimeMoniker.Net48 )]
+    [SimpleJob( RuntimeMoniker.Net472, baseline: true )]
     [SimpleJob( RuntimeMoniker.Net50 )]
     [SimpleJob( RuntimeMoniker.Net60 )]
     public class JsonParsersComplexObjectBenchmark

@@ -7,12 +7,9 @@ using System.Diagnostics;
 
 namespace UltraMapper.Json.Benchmarks
 {
-    [SimpleJob( RuntimeMoniker.Net462, baseline: true )]
-    [SimpleJob( RuntimeMoniker.Net472 )]
-    [SimpleJob( RuntimeMoniker.Net48 )]
+    [SimpleJob( RuntimeMoniker.Net472, baseline: true )]
     [SimpleJob( RuntimeMoniker.Net50 )]
     [SimpleJob( RuntimeMoniker.Net60 )]
-    [RPlotExporter]
     public class JsonParsersSimpleObjectBenchmark
     {
         public class Account
@@ -34,10 +31,14 @@ namespace UltraMapper.Json.Benchmarks
             ]
         }";
 
+
         private static readonly JsonSerializer jsonParser = new JsonSerializer();
 
         [Benchmark]
-        public void UltraMapper() => jsonParser.Deserialize<Account>( json );
+        public void UltraMapperSB() => jsonParser.Deserialize<Account>( json );
+
+        [Benchmark]
+        public void UltraMapperSS() => jsonParser.Deserialize<Account>( json );
 
         [Benchmark]
         public void Newtonsoft() => JsonConvert.DeserializeObject<Account>( json );
@@ -46,9 +47,6 @@ namespace UltraMapper.Json.Benchmarks
         public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Account>( json );
 
         [Benchmark]
-        public void NetJson()
-        {
-            System.Text.Json.JsonSerializer.Deserialize<Account>( json );
-        }
+        public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Account>( json );
     }
 }

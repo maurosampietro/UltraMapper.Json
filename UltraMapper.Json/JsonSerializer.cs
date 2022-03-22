@@ -13,9 +13,9 @@ namespace UltraMapper.Json
     {
         private readonly JsonString _jsonString = new JsonString();
 #if NET5_0_OR_GREATER
-        private readonly JsonParserWithReadonlySpan Parser = new JsonParserWithReadonlySpan();
+        private readonly IParser Parser = new JsonParserWithReadonlySpan();
 #else
-        private readonly JsonParserWithSubstrings Parser = new JsonParserWithSubstrings();
+        private readonly IParser Parser = new JsonParserWithSubstrings();
 #endif
 
         public CultureInfo Culture { get; set; }
@@ -49,11 +49,16 @@ namespace UltraMapper.Json
         private Type lastMapType = null;
         private Action<ReferenceTracker, object, object> _map = null;
 
-
         public JsonSerializer()
         {
             this.Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
+        }
+
+        public JsonSerializer( IParser parser )
+            : this()
+        {
+            Parser = parser;
         }
 
         public T Deserialize<T>( string str ) where T : class, new()
