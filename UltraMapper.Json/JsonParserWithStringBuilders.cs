@@ -26,7 +26,10 @@ namespace UltraMapper.Json
         private char _currentChar;
 
         public IParsedParam Parse( string text )
-        {
+        {       
+            if( String.IsNullOrWhiteSpace( text ) )
+                return null;
+
             for( int i = 0; true; i++ )
             {
                 _currentChar = text[ i ];
