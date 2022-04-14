@@ -43,6 +43,9 @@ namespace UltraMapper.Json
 
         public IParsedParam Parse( string text )
         {
+            if( String.IsNullOrWhiteSpace( text ) )
+                return null;
+                
             for( int i = 0; true; i++ )
             {
                 _currentChar = text[ i ];
