@@ -2,12 +2,13 @@
 using BenchmarkDotNet.Jobs;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using UltraMapper.Parsing;
 
 namespace UltraMapper.Json.Benchmarks
 {
-    [SimpleJob( RuntimeMoniker.Net472, baseline: true )]
+    //[SimpleJob( RuntimeMoniker.Net472, baseline: true )]
     [SimpleJob( RuntimeMoniker.Net50 )]
-    [SimpleJob( RuntimeMoniker.Net60 )]
+    //[SimpleJob( RuntimeMoniker.Net60 )]
     public class JsonParsersComplexObjectBenchmark
     {
         public class Item
@@ -51,7 +52,7 @@ namespace UltraMapper.Json.Benchmarks
 			}
 			";
 
-        private static readonly JsonSerializer jsonParser = new JsonSerializer();
+        private static readonly JsonSerializer<Item> jsonParser = new JsonSerializer<Item>();
 
         [GlobalSetup]
         public void Setup()
@@ -60,13 +61,13 @@ namespace UltraMapper.Json.Benchmarks
         }
 
         [Benchmark]
-        public void UltraMapper() => jsonParser.Deserialize<Item>( json );
-
-        [Benchmark]
-        public void Newtonsoft() => JsonConvert.DeserializeObject<Item>( json );
+        public void UltraMapper() => jsonParser.Deserialize( json );
 
         [Benchmark]
         public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Item>( json );
+
+        [Benchmark]
+        public void Newtonsoft() => JsonConvert.DeserializeObject<Item>( json );
 
         [Benchmark]
         public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Item>( json );

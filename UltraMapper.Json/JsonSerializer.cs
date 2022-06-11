@@ -9,19 +9,16 @@ using UltraMapper.Parsing.Extensions;
 
 namespace UltraMapper.Json
 {
-    public sealed class JsonSerializer
+    public sealed class JsonSerializer<T>
+        where T : class, new()
     {
         private readonly JsonString _jsonString = new JsonString();
-#if NET5_0_OR_GREATER
-        private readonly IParser Parser = new JsonParserWithReadonlySpan();
-#else
-        private readonly IParser Parser = new JsonParserWithSubstrings();
-#endif
+        private readonly IParser Parser = new JsonParser();
 
         public CultureInfo Culture { get; set; }
             = CultureInfo.InvariantCulture;
 
-        public Mapper Mapper = new Mapper( cfg =>
+        public static Mapper Mapper = new Mapper( cfg =>
         {
             cfg.IsReferenceTrackingEnabled = false;
             cfg.ReferenceBehavior = ReferenceBehaviors.CREATE_NEW_INSTANCE;
@@ -42,16 +39,90 @@ namespace UltraMapper.Json
                 new ArrayParamExpressionBuilder( cfg ),
                 new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
-                new ObjectToJsonMapper( cfg )
+                new ObjectToJsonMapper( cfg ),
+                new EnumerableToJsonMapper( cfg )
+            } );
+        } );
+
+        private readonly Action<ReferenceTracker, object, object> _desMap;
+        private readonly Action<ReferenceTracker, object, object> _serMap;
+
+        public JsonSerializer()
+        {
+            Mapper.Config.MapTypes<string, DateTime>(
+                s => DateTime.Parse( s, Culture ) );
+
+            _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
+            _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
+        }
+
+        public JsonSerializer( IParser parser )
+            : this()
+        {
+            Parser = parser;
+        }
+
+        public T Deserialize( string str )
+        {
+            return this.Deserialize( str, new T() );
+        }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        public T Deserialize( string str, T instance )
+        {
+            var parsedContent = this.Parser.Parse( str );
+            _desMap( null, parsedContent, instance );
+            return instance;
+        }
+
+        public string Serialize( T instance )
+        {
+            _jsonString.Json.Clear();
+            _serMap( null, instance, _jsonString );
+            return _jsonString.Json.ToString();
+        }
+    }
+
+    public sealed class JsonSerializer 
+    {
+        private readonly JsonString _jsonString = new JsonString();
+        private readonly IParser Parser = new JsonParser();
+
+        public CultureInfo Culture { get; set; }
+            = CultureInfo.InvariantCulture;
+
+        public static Mapper Mapper = new Mapper( cfg =>
+        {
+            cfg.IsReferenceTrackingEnabled = false;
+            cfg.ReferenceBehavior = ReferenceBehaviors.CREATE_NEW_INSTANCE;
+
+            cfg.Conventions.GetOrAdd<DefaultConvention>( rule =>
+            {
+                rule.SourceMemberProvider.IgnoreFields = true;
+                rule.SourceMemberProvider.IgnoreMethods = true;
+                rule.SourceMemberProvider.IgnoreNonPublicMembers = true;
+
+                rule.TargetMemberProvider.IgnoreFields = true;
+                rule.TargetMemberProvider.IgnoreMethods = true;
+                rule.TargetMemberProvider.IgnoreNonPublicMembers = true;
+            } );
+
+            cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
+            {
+                new ArrayParamExpressionBuilder( cfg ),
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
+                new SimpleParamExpressionBuilder( cfg ),
+                new ObjectToJsonMapper( cfg ),
+                new EnumerableToJsonMapper( cfg )
             } );
         } );
 
         private Type lastMapType = null;
-        private Action<ReferenceTracker, object, object> _map = null;
+        private Action<ReferenceTracker, object, object> _map;
 
         public JsonSerializer()
         {
-            this.Mapper.Config.MapTypes<string, DateTime>(
+            Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
         }
 
@@ -74,7 +145,7 @@ namespace UltraMapper.Json
             if( lastMapType != typeof( T ) )
             {
                 lastMapType = typeof( T );
-                _map = this.Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
+                _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
             _map( null, parsedContent, instance );
@@ -85,7 +156,7 @@ namespace UltraMapper.Json
         {
             _jsonString.Json.Clear();
 
-            var map = this.Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
+            var map = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
             map( null, instance, _jsonString );
             return _jsonString.Json.ToString();
         }

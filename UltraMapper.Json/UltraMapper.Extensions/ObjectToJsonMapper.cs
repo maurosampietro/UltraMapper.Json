@@ -23,7 +23,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
 
         public override bool CanHandle( Type source, Type target )
         {
-            return target == typeof( JsonString );
+            return !source.IsEnumerable() && target == typeof( JsonString );
         }
 
         public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
@@ -33,7 +33,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
 
             var indentationParam = Expression.PropertyOrField( context.TargetInstance, nameof( JsonString.Indentation ) );
 
-            var expressions = GetTargetStrings( sourceMembers, context );
+            var expressions = GetTargetStrings( sourceMembers, context, indentationParam );
 
             var expression = Expression.Block
             (
@@ -87,7 +87,8 @@ namespace UltraMapper.Json.UltraMapper.Extensions
         }
 
         private IEnumerable<Expression> GetTargetStrings( PropertyInfo[] targetMembers,
-            ReferenceMapperContext context )
+            ReferenceMapperContext context,
+            MemberExpression indentationParam )
         {
             for( int i = 0; i < targetMembers.Length; i++ )
             {
@@ -96,13 +97,10 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 //It is important to check array/collections after built-in types
                 //(ie: string implements IEnumerable<char>)
 
-                LambdaExpression toStringExp = null;
-
                 if( item.PropertyType.IsBuiltIn( true ) )
                 {
-                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( string ) ].MappingExpression;
-
                     var memberAccess = Expression.Property( context.SourceInstance, item );
+                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( string ) ].MappingExpression;
 
                     yield return Expression.Invoke( _appendMemberNameValue, context.TargetInstance,
                         Expression.Constant( item.Name ),
@@ -110,18 +108,27 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 }
                 else if( item.PropertyType.IsEnumerable() )
                 {
-                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+                    var memberAccess = Expression.Property( context.SourceInstance, item );
+
+                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+
+                    yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
+                    yield return Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "[" + Environment.NewLine ) );
+                    yield return Expression.PostIncrementAssign( indentationParam );
+                    yield return Expression.Invoke( toStringExp, context.ReferenceTracker, memberAccess, context.TargetInstance );
+                    yield return Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( Environment.NewLine + "]" ) );
+                    yield return Expression.PostDecrementAssign( indentationParam );
                 }
                 else
                 {
-                    toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
                     var memberAccess = Expression.Property( context.SourceInstance, item );
 
                     yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
                     yield return Expression.Invoke( toStringExp, context.ReferenceTracker, memberAccess, context.TargetInstance );
                     if( i != targetMembers.Length - 1 )
                         yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( "," + Environment.NewLine ) );
-                    else 
+                    else
                         yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( Environment.NewLine, typeof( string ) ) );
                 }
             }

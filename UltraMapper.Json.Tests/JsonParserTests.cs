@@ -8,18 +8,12 @@ namespace UltraMapper.Json.Test
     [TestClass]
     public class JsonParserTests
     {
-#if NET5_0_OR_GREATER
-        private IParser GetParser()=> new JsonParserUtf8ReadonlySpan();
-#else
-        private IParser GetParser() => new JsonParserWithStringBuilders();
-#endif
-
         [TestMethod]
         public void Example1ArrayPrimitiveType()
         {
             string inputJson = "[ 100 , 200, 300, 400, 500 ]";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
 
             Assert.IsTrue( result.Items.Count == 5 );
@@ -28,6 +22,181 @@ namespace UltraMapper.Json.Test
             Assert.IsTrue( ((SimpleParam)result.Items[ 2 ]).Value == "300" );
             Assert.IsTrue( ((SimpleParam)result.Items[ 3 ]).Value == "400" );
             Assert.IsTrue( ((SimpleParam)result.Items[ 4 ]).Value == "500" );
+        }
+
+        [TestMethod]
+        public void QuotationContainsSpecialChars()
+        {
+            string inputJson = @"{ param:""}{\\][\"",:""}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            var param = (SimpleParam)result.SubParams[ 0 ];
+
+            Assert.IsTrue( param.Name == "param" );
+            Assert.IsTrue( param.Value == @"}{\]["",:" );
+        }
+
+        [TestMethod]
+        public void QuotationContainsControlChars()
+        {
+            string inputJson = @"{param:""\\\""\b\f\n\r\t""}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            var param = (SimpleParam)result.SubParams[ 0 ];
+
+            Assert.IsTrue( param.Name == "param" );
+            Assert.IsTrue( param.Value == "\\\"\b\f\n\r\t" );
+        }
+
+        [TestMethod]
+        public void QuotationContainsUnicodeChars()
+        {
+            string inputJson = @"{param:""\u0030\u0031""}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            var param = (SimpleParam)result.SubParams[ 0 ];
+
+            Assert.IsTrue( param.Name == "param" );
+            Assert.IsTrue( param.Value == "\u0030\u0031" );
+        }
+
+        [TestMethod]
+        public void EmptyObject()
+        {
+            string inputJson = @"{}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result != null );
+            Assert.IsTrue( result.Name == String.Empty );
+            Assert.IsTrue( result.SubParams.Count == 0 );
+        }
+
+        [TestMethod]
+        public void EmptySubObject()
+        {
+            string inputJson = @"
+			{ 
+				emptyObject : {}
+			}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result.SubParams.Count == 1 );
+            Assert.IsTrue( result.SubParams[ 0 ].Name == "emptyObject" );
+            Assert.IsTrue( ((ComplexParam)result.SubParams[ 0 ]).SubParams.Count == 0 );
+        }
+
+        [Ignore]
+        [TestMethod]
+        public void EmptySubObject2()
+        {
+            string inputJson = @"
+			{ 
+				emptyObject : {,,}
+			}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result.SubParams.Count == 1 );
+            Assert.IsTrue( result.SubParams[ 0 ].Name == "emptyObject" );
+            Assert.IsTrue( ((ComplexParam)result.SubParams[ 0 ]).SubParams.Count == 0 );
+        }
+
+        [TestMethod]
+        public void EmptyArray()
+        {
+            string inputJson = @"[]";
+
+            var parser = new JsonParser();
+            var result = (ArrayParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result != null );
+            Assert.IsTrue( result.Items.Count == 0 );
+        }
+
+        [TestMethod]
+        public void EmptySubArray()
+        {
+            string inputJson = @"
+			{ 
+				emptyArray : []
+			}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( inputJson );
+
+            var arrayParam = (ArrayParam)result.SubParams[ 0 ];
+
+            Assert.IsTrue( arrayParam != null );
+            Assert.IsTrue( arrayParam.Items.Count == 0 );
+        }
+
+        [TestMethod]
+        public void SubArrays()
+        {
+            string inputJson = @"
+			[
+				[1,2], [3,4], [5,6]
+			]";
+
+            var parser = new JsonParser();
+            var result = (ArrayParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result.Items.Count == 3 );
+
+            var item1 = (ArrayParam)result[ 0 ];
+            Assert.IsTrue( item1.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item1[ 0 ]).Value == "1" );
+            Assert.IsTrue( ((SimpleParam)item1[ 1 ]).Value == "2" );
+
+            var item2 = (ArrayParam)result[ 1 ];
+            Assert.IsTrue( item2.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item2[ 0 ]).Value == "3" );
+            Assert.IsTrue( ((SimpleParam)item2[ 1 ]).Value == "4" );
+
+            var item3 = (ArrayParam)result[ 2 ];
+            Assert.IsTrue( item3.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item3[ 0 ]).Value == "5" );
+            Assert.IsTrue( ((SimpleParam)item3[ 1 ]).Value == "6" );
+        }
+
+        [TestMethod]
+        public void SubArraysQuotedUnquotedElements()
+        {
+            string inputJson = @"
+			[
+				[""1"",""2""], [""3"",4], [5,""6""]
+			]";
+
+            var parser = new JsonParser();
+            var result = (ArrayParam)parser.Parse( inputJson );
+
+            Assert.IsTrue( result.Items.Count == 3 );
+
+            var item1 = (ArrayParam)result[ 0 ];
+            Assert.IsTrue( item1.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item1[ 0 ]).Value == "1" );
+            Assert.IsTrue( ((SimpleParam)item1[ 1 ]).Value == "2" );
+
+            var item2 = (ArrayParam)result[ 1 ];
+            Assert.IsTrue( item2.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item2[ 0 ]).Value == "3" );
+            Assert.IsTrue( ((SimpleParam)item2[ 1 ]).Value == "4" );
+
+            var item3 = (ArrayParam)result[ 2 ];
+            Assert.IsTrue( item3.Items.Count == 2 );
+            Assert.IsTrue( ((SimpleParam)item3[ 0 ]).Value == "5" );
+            Assert.IsTrue( ((SimpleParam)item3[ 1 ]).Value == "6" );
         }
 
         [TestMethod]
@@ -45,7 +214,7 @@ namespace UltraMapper.Json.Test
 				},
 			]";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
 
             Assert.IsTrue( result.Items.Count == 2 );
@@ -76,11 +245,11 @@ namespace UltraMapper.Json.Test
 				escapedComma:"",""
 			}";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
             Assert.IsTrue( result.Name == String.Empty );
-            Assert.IsTrue( result.SubParams.Length == 4 );
+            Assert.IsTrue( result.SubParams.Count == 4 );
 
             var param1 = (SimpleParam)result.SubParams[ 0 ];
             Assert.IsTrue( param1.Name == "unquotedParam" );
@@ -113,7 +282,7 @@ namespace UltraMapper.Json.Test
 				}
 			}";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
             var param1 = (SimpleParam)result.SubParams[ 0 ];
@@ -153,10 +322,10 @@ namespace UltraMapper.Json.Test
 				]
 			}";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
-            Assert.IsTrue( result.SubParams.Length == 4 );
+            Assert.IsTrue( result.SubParams.Count == 4 );
 
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Name == "id" );
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Value == "0001" );
@@ -165,7 +334,7 @@ namespace UltraMapper.Json.Test
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Value == "0.55" );
 
             var complexParam = (ComplexParam)result.SubParams[ 2 ];
-            Assert.IsTrue( complexParam.SubParams.Length == 1 );
+            Assert.IsTrue( complexParam.SubParams.Count == 1 );
             Assert.IsTrue( complexParam.Name == "batters" );
 
             var subArray = (ArrayParam)complexParam.SubParams[ 0 ];
@@ -231,13 +400,13 @@ namespace UltraMapper.Json.Test
 				}
 			]";
 
-            var parser = GetParser();
+            var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
 
             Assert.IsTrue( result.Items.Count == 1 );
 
             var complexParam = (ComplexParam)result.Items[ 0 ];
-            Assert.IsTrue( complexParam.SubParams.Length == 4 );
+            Assert.IsTrue( complexParam.SubParams.Count == 4 );
 
             Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Name == "id" );
             Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Value == "0003" );
@@ -283,160 +452,6 @@ namespace UltraMapper.Json.Test
 
             Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Name == "type" );
             Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Value == "Glazed" );
-        }
-
-        [TestMethod]
-        public void QuotationContainsSpecialChars()
-        {
-            string inputJson = @"{ param:""}{\\][\"",:""}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-
-            var param = (SimpleParam)result.SubParams[ 0 ];
-
-            Assert.IsTrue( param.Name == "param" );
-            Assert.IsTrue( param.Value == @"}{\]["",:" );
-        }
-
-        [TestMethod]
-        public void QuotationContainsControlChars()
-        {
-            string inputJson = @"{param:""\\\""\b\f\n\r\t""}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-
-            var param = (SimpleParam)result.SubParams[ 0 ];
-
-            Assert.IsTrue( param.Name == "param" );
-            Assert.IsTrue( param.Value == "\\\"\b\f\n\r\t" );
-        }
-
-        [TestMethod]
-        public void QuotationContainsUnicodeChars()
-        {
-            string inputJson = @"{param:""\u0030\u0031""}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-
-            var param = (SimpleParam)result.SubParams[ 0 ];
-
-            Assert.IsTrue( param.Name == "param" );
-            Assert.IsTrue( param.Value == "\u0030\u0031" );
-        }
-
-        [TestMethod]
-        public void EmptyObject()
-        {
-            string inputJson = @"{}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-
-            Assert.IsTrue( result != null );
-            Assert.IsTrue( result.Name == String.Empty );
-            Assert.IsTrue( result.SubParams.Length == 0 );
-        }
-
-        [TestMethod]
-        public void EmptySubObject()
-        {
-            string inputJson = @"
-			{ 
-				emptyObject : {}
-			}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-        }
-
-        [TestMethod]
-        public void EmptyArray()
-        {
-            string inputJson = @"[]";
-
-            var parser = GetParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
-
-            Assert.IsTrue( result != null );
-            Assert.IsTrue( result.Items.Count == 0 );
-        }
-
-        [TestMethod]
-        public void EmptySubArray()
-        {
-            string inputJson = @"
-			{ 
-				emptyArray : []
-			}";
-
-            var parser = GetParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
-
-            var arrayParam = (ArrayParam)result.SubParams[ 0 ];
-
-            Assert.IsTrue( arrayParam != null );
-            Assert.IsTrue( arrayParam.Items.Count == 0 );
-        }
-
-        [TestMethod]
-        public void SubArrays()
-        {
-            string inputJson = @"
-			[
-				[1,2], [3,4], [5,6]
-			]";
-
-            var parser = GetParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
-
-            Assert.IsTrue( result.Items.Count == 3 );
-
-            var item1 = (ArrayParam)result[ 0 ];
-            Assert.IsTrue( item1.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item1[ 0 ]).Value == "1" );
-            Assert.IsTrue( ((SimpleParam)item1[ 1 ]).Value == "2" );
-
-            var item2 = (ArrayParam)result[ 1 ];
-            Assert.IsTrue( item2.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item2[ 0 ]).Value == "3" );
-            Assert.IsTrue( ((SimpleParam)item2[ 1 ]).Value == "4" );
-
-            var item3 = (ArrayParam)result[ 2 ];
-            Assert.IsTrue( item3.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item3[ 0 ]).Value == "5" );
-            Assert.IsTrue( ((SimpleParam)item3[ 1 ]).Value == "6" );
-        }
-
-        [TestMethod]
-        public void SubArraysQuotedUnquotedElements()
-        {
-            string inputJson = @"
-			[
-				[""1"",""2""], [""3"",4], [5,""6""]
-			]";
-
-            var parser = GetParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
-
-            Assert.IsTrue( result.Items.Count == 3 );
-
-            var item1 = (ArrayParam)result[ 0 ];
-            Assert.IsTrue( item1.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item1[ 0 ]).Value == "1" );
-            Assert.IsTrue( ((SimpleParam)item1[ 1 ]).Value == "2" );
-
-            var item2 = (ArrayParam)result[ 1 ];
-            Assert.IsTrue( item2.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item2[ 0 ]).Value == "3" );
-            Assert.IsTrue( ((SimpleParam)item2[ 1 ]).Value == "4" );
-
-            var item3 = (ArrayParam)result[ 2 ];
-            Assert.IsTrue( item3.Items.Count == 2 );
-            Assert.IsTrue( ((SimpleParam)item3[ 0 ]).Value == "5" );
-            Assert.IsTrue( ((SimpleParam)item3[ 1 ]).Value == "6" );
         }
     }
 }
