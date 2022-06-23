@@ -64,7 +64,7 @@ namespace UltraMapper.Json.Benchmarks
 
         static void Main( string[] args )
         {
-            var summary = BenchmarkRunner.Run( typeof( Program ).Assembly, new DebugInProcessConfig() );
+            var summary = BenchmarkRunner.Run<JsonParsersSimpleObjectWriteBenchmark>( new DebugInProcessConfig() );
 
             //var jsonSer = new JsonSerializer();
             //var item = jsonSer.Deserialize<Item>( json );

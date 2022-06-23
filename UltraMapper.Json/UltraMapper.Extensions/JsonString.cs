@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Text;
 
 namespace UltraMapper.Json
 {
@@ -12,19 +14,29 @@ namespace UltraMapper.Json
     {
         public StringBuilder Json = new StringBuilder();
 
-        private int _indentations = 0;
-
         public string IndentationString { get; private set; }
 
+        private int _indentation = 0;
         public int Indentation
         {
-            get => _indentations;
+            get => _indentation;
             set
             {
-                _indentations = value;
-                IndentationString = new string( '\t', value );
+                _indentation = value;
+
+                if( _indentation < _indentStrs.Count )
+                    this.IndentationString = _indentStrs[ _indentation ];
+                else
+                {
+                    this.IndentationString = new string( '\t', _indentation );
+                    _indentStrs.Add( this.IndentationString );
+                }
             }
         }
 
+        //No need to be static since every parser should use 1 instance of JsonString.
+        //Locking or ConcurrentCollections are actually slower techniques than
+        //creating the indentationstring every single time
+        private readonly List<string> _indentStrs = new List<string>();
     }
 }

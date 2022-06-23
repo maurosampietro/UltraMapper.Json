@@ -3,7 +3,6 @@
 namespace UltraMapper.Json.Test
 {
     [TestClass]
-    [Ignore]
     public class JsonWriter
     {
         private class CircularReferenceObject

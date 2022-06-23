@@ -10,7 +10,7 @@ namespace UltraMapper.Json.Benchmarks
     //[SimpleJob( RuntimeMoniker.Net472, baseline: true )]
     [SimpleJob( RuntimeMoniker.Net50 )]
     //[SimpleJob( RuntimeMoniker.Net60 )]
-    public class JsonParsersSimpleObjectBenchmark
+    public class JsonParsersSimpleObjectReadBenchmark
     {
         public class Account
         {

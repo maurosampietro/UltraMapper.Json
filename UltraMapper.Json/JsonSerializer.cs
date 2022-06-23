@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
+using UltraMapper.Internals;
 using UltraMapper.Json.UltraMapper.Extensions;
 using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
@@ -70,9 +72,40 @@ namespace UltraMapper.Json
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public T Deserialize( string str, T instance )
         {
+            var midStructure = GetMidStruct( typeof( T ) );
+
             var parsedContent = this.Parser.Parse( str );
             _desMap( null, parsedContent, instance );
             return instance;
+        }
+
+        private ComplexParam GetMidStruct(Type type)
+        {
+            var convention = Mapper.Config.Conventions.OfType<DefaultConvention>().First();
+            var relevant = convention.SourceMemberProvider.GetMembers( type ).ToList();
+                //.Where(m=>m.GetCustomAttributes().Any(a=>!(a is ignore ) ));
+
+            var cp = new ComplexParam();
+            foreach( var item in relevant )
+            {
+                var itemType = item.GetMemberType();
+
+                if( itemType.IsBuiltIn( true ) )
+                {
+                    cp.SubParams.Add( new SimpleParam() { Name = item.Name } );
+                }
+                else if( itemType.IsEnumerable() )
+                {
+                    cp.SubParams.Add( new ArrayParam() { Name = item.Name } );
+                }
+                else
+                {
+                    cp.SubParams.Add( new ComplexParam() { Name = item.Name } );
+                }
+
+            }
+
+            return cp;
         }
 
         public string Serialize( T instance )
