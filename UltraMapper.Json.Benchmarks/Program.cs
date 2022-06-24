@@ -10,16 +10,16 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
+using UltraMapper.Conventions;
+using UltraMapper.Internals;
 using UltraMapper.Parsing;
 
 namespace UltraMapper.Json.Benchmarks
 {
     //- STRING TO DATETIME CONVERSION PROBLEMS
-
-    class Program
-    {
         public class Item
         {
             public string id { get; set; }
@@ -38,6 +38,9 @@ namespace UltraMapper.Json.Benchmarks
             public string id { get; set; }
             public string type { get; set; }
         }
+
+    class Program
+    {
 
 
         static string json = @"
@@ -64,7 +67,9 @@ namespace UltraMapper.Json.Benchmarks
 
         static void Main( string[] args )
         {
-            var summary = BenchmarkRunner.Run<JsonParsersSimpleObjectWriteBenchmark>( new DebugInProcessConfig() );
+             GetMidStruct<Item>();
+
+            //var summary = BenchmarkRunner.Run<JsonParsersSimpleObjectWriteBenchmark>( new DebugInProcessConfig() );
 
             //var jsonSer = new JsonSerializer();
             //var item = jsonSer.Deserialize<Item>( json );
@@ -72,6 +77,49 @@ namespace UltraMapper.Json.Benchmarks
 
             //Console.ReadLine();
         }
+
+
+        private static Dictionary<Type, IParsedParam> _templates
+            = new Dictionary<Type, IParsedParam>();
+
+        private static void GetMidStruct<T>()
+            => GetMidStruct( typeof( T ) );
+
+        private static void GetMidStruct( Type type )
+        {
+            if( _templates.ContainsKey( type ) )
+                return;
+
+            var convention = new Mapper().Config.Conventions.OfType<DefaultConvention>().First();
+            var relevant = convention.SourceMemberProvider.GetMembers( type ).ToList();
+            //.Where(m=>m.GetCustomAttributes().Any(a=>!(a is ignore ) ));
+
+            var cp = new ComplexParam() { SubParams = new List<IParsedParam>() };
+
+            foreach( var item in relevant )
+            {
+                var itemType = item.GetMemberType();
+
+                if( itemType.IsBuiltIn( true ) )
+                {
+                    cp.SubParams.Add( new SimpleParam() { Name = item.Name } );
+                }
+                else if( itemType.IsEnumerable() )
+                {
+                    cp.SubParams.Add( new ArrayParam() { Name = item.Name } );
+                    GetMidStruct( item.GetMemberType().GetCollectionGenericType() );
+                }
+                else
+                {
+                    cp.SubParams.Add( new ComplexParam() { Name = item.Name } );
+                    GetMidStruct(item.GetMemberType());
+                }
+
+            }
+
+            _templates.Add(type, cp);
+        }
+
 
         private static void manualMapping()
         {

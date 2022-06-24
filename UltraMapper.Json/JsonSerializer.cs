@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Globalization;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
-using UltraMapper.Internals;
 using UltraMapper.Json.UltraMapper.Extensions;
 using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
@@ -14,6 +12,7 @@ namespace UltraMapper.Json
     public sealed class JsonSerializer<T>
         where T : class, new()
     {
+        private readonly ReferenceTracker _referenceTracker = new ReferenceTracker();
         private readonly JsonString _jsonString = new JsonString();
         private readonly IParser Parser = new JsonParser();
 
@@ -44,7 +43,7 @@ namespace UltraMapper.Json
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
             } );
-        } );
+       } );
 
         private readonly Action<ReferenceTracker, object, object> _desMap;
         private readonly Action<ReferenceTracker, object, object> _serMap;
@@ -55,7 +54,7 @@ namespace UltraMapper.Json
                 s => DateTime.Parse( s, Culture ) );
 
             _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
-            _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
+            _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;                       
         }
 
         public JsonSerializer( IParser parser )
@@ -72,52 +71,24 @@ namespace UltraMapper.Json
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public T Deserialize( string str, T instance )
         {
-            var midStructure = GetMidStruct( typeof( T ) );
-
             var parsedContent = this.Parser.Parse( str );
             _desMap( null, parsedContent, instance );
             return instance;
         }
 
-        private ComplexParam GetMidStruct(Type type)
-        {
-            var convention = Mapper.Config.Conventions.OfType<DefaultConvention>().First();
-            var relevant = convention.SourceMemberProvider.GetMembers( type ).ToList();
-                //.Where(m=>m.GetCustomAttributes().Any(a=>!(a is ignore ) ));
-
-            var cp = new ComplexParam();
-            foreach( var item in relevant )
-            {
-                var itemType = item.GetMemberType();
-
-                if( itemType.IsBuiltIn( true ) )
-                {
-                    cp.SubParams.Add( new SimpleParam() { Name = item.Name } );
-                }
-                else if( itemType.IsEnumerable() )
-                {
-                    cp.SubParams.Add( new ArrayParam() { Name = item.Name } );
-                }
-                else
-                {
-                    cp.SubParams.Add( new ComplexParam() { Name = item.Name } );
-                }
-
-            }
-
-            return cp;
-        }
-
         public string Serialize( T instance )
         {
             _jsonString.Json.Clear();
-            _serMap( null, instance, _jsonString );
+            _referenceTracker.Clear();
+
+            _serMap( _referenceTracker, instance, _jsonString );
             return _jsonString.Json.ToString();
         }
     }
 
     public sealed class JsonSerializer 
     {
+        private readonly ReferenceTracker _referenceTracker = new ReferenceTracker();
         private readonly JsonString _jsonString = new JsonString();
         private readonly IParser Parser = new JsonParser();
 
@@ -148,7 +119,7 @@ namespace UltraMapper.Json
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
             } );
-        } );
+       } );
 
         private Type lastMapType = null;
         private Action<ReferenceTracker, object, object> _map;
@@ -188,9 +159,10 @@ namespace UltraMapper.Json
         public string Serialize<T>( T instance )
         {
             _jsonString.Json.Clear();
+            _referenceTracker.Clear();
 
             var map = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
-            map( null, instance, _jsonString );
+            map( _referenceTracker, instance, _jsonString );
             return _jsonString.Json.ToString();
         }
     }

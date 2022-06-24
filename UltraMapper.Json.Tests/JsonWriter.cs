@@ -33,29 +33,39 @@ namespace UltraMapper.Json.Test
         [TestMethod]
         public void CircularReference()
         {
-            var obj = new CircularReferenceObject()
+            var objToJson = new CircularReferenceObject()
             {
                 Simple1 = 11,
                 Simple2 = "ciao",
                 Simple3 = 13.0,
             };
 
-            obj.Complex = new CircularReferenceObject()
+            objToJson.Complex = new CircularReferenceObject()
             {
                 Simple1 = 21,
                 Simple2 = "hello",
                 Simple3 = 23.0,
-                Complex = obj
+                Complex = objToJson
             };
 
             var parser = new JsonSerializer();
-            var outputJson = parser.Serialize( obj );
+            var outputJson = parser.Serialize( objToJson );
+
+            var jsonToObj = parser.Deserialize<CircularReferenceObject>( outputJson );
+
+            Assert.IsTrue( jsonToObj.Simple1 == objToJson.Simple1 );
+            Assert.IsTrue( jsonToObj.Simple2 == objToJson.Simple2 );
+            Assert.IsTrue( jsonToObj.Simple3 == objToJson.Simple3 );
+
+            Assert.IsTrue( jsonToObj.Complex.Simple1 == objToJson.Complex.Simple1 );
+            Assert.IsTrue( jsonToObj.Complex.Simple2 == objToJson.Complex.Simple2 );
+            Assert.IsTrue( jsonToObj.Complex.Simple3 == objToJson.Complex.Simple3 );
         }
 
         [TestMethod]
         public void Test()
         {
-            var obj = new ClassA()
+            var objToJson = new ClassA()
             {
                 Simple1 = 11,
                 Simple2 = "ciao",
@@ -70,16 +80,17 @@ namespace UltraMapper.Json.Test
             };
 
             var parser = new JsonSerializer();
-            var json = parser.Serialize( obj );
+            var json = parser.Serialize( objToJson );
 
-            var objFromJson = parser.Deserialize<ClassA>( json );
+            var jsonToObj = parser.Deserialize<ClassA>( json );
 
-            Assert.IsTrue( objFromJson.Simple1 == obj.Simple1 );
-            Assert.IsTrue( objFromJson.Simple2 == obj.Simple2 );
-            Assert.IsTrue( objFromJson.Simple3 == obj.Simple3 );
-            Assert.IsTrue( objFromJson.ObjB.Simple1 == obj.ObjB.Simple1 );
-            Assert.IsTrue( objFromJson.ObjB.Simple2 == obj.ObjB.Simple2 );
-            Assert.IsTrue( objFromJson.ObjB.Simple3 == obj.ObjB.Simple3 );
+            Assert.IsTrue( jsonToObj.Simple1 == objToJson.Simple1 );
+            Assert.IsTrue( jsonToObj.Simple2 == objToJson.Simple2 );
+            Assert.IsTrue( jsonToObj.Simple3 == objToJson.Simple3 );
+           
+            Assert.IsTrue( jsonToObj.ObjB.Simple1 == objToJson.ObjB.Simple1 );
+            Assert.IsTrue( jsonToObj.ObjB.Simple2 == objToJson.ObjB.Simple2 );
+            Assert.IsTrue( jsonToObj.ObjB.Simple3 == objToJson.ObjB.Simple3 );
         }
     }
 }

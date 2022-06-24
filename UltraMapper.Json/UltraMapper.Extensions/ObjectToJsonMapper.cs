@@ -6,6 +6,7 @@ using System.Reflection;
 using UltraMapper.Conventions;
 using UltraMapper.Internals;
 using UltraMapper.MappingExpressionBuilders;
+using UltraMapper.ReferenceTracking;
 
 namespace UltraMapper.Json.UltraMapper.Extensions
 {
@@ -119,49 +120,26 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                     yield return Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( Environment.NewLine + "]" ) );
                     yield return Expression.PostDecrementAssign( indentationParam );
                 }
-                else if( item.PropertyType == context.SourceInstance.Type )
-                {
-                    var mapMethod = ReferenceMapperContext.RecursiveMapMethodInfo
-                        .MakeGenericMethod( item.PropertyType, typeof( JsonString ) );
-
-                    var memberAccess = Expression.Property( context.SourceInstance, item );
-
-                    yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
-
-                    yield return Expression.IfThen
-                    ( 
-                        Expression.IsTrue
-                        ( 
-                            Expression.NotEqual( memberAccess, Expression.Constant(null,item.PropertyType))
-                        ),
-
-                        Expression.Block
-                        (
-                            new[] { context.Mapper },
-
-                            Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
-
-                            Expression.Call( context.Mapper, mapMethod, memberAccess,
-                               context.TargetInstance, context.ReferenceTracker, Expression.Constant( null, typeof(IMapping) ) ) 
-                        )
-                    );
-
-                    if( i != targetMembers.Length - 1 )
-                        yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( "," + Environment.NewLine ) );
-                    else
-                        yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( Environment.NewLine, typeof( string ) ) );
-
-
-
-
-                }
                 else
                 {
-                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
                     var memberAccess = Expression.Property( context.SourceInstance, item );
+                    var memberAccessParam = Expression.Parameter( item.PropertyType, "ma" );
 
                     yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
-                    yield return Expression.Invoke( toStringExp, context.ReferenceTracker, memberAccess, context.TargetInstance );
+
+                    yield return Expression.Block
+                    (
+                        new[] { memberAccessParam },
+
+                        Expression.Assign(memberAccessParam, memberAccess ),
+
+                        ReferenceTrackingExpression.GetMappingExpression(
+                            context.ReferenceTracker, memberAccessParam,
+                            context.TargetInstance, Expression.Empty(),
+                            context.Mapper, _mapper,
+                            Expression.Constant( null, typeof( IMapping ) ) )
+                    );
+
                     if( i != targetMembers.Length - 1 )
                         yield return Expression.Invoke( _appendText, context.TargetInstance, Expression.Constant( "," + Environment.NewLine ) );
                     else
