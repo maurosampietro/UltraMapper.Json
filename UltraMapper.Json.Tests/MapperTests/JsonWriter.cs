@@ -1,7 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace UltraMapper.Json.Test
+namespace UltraMapper.Json.Tests.MapperTests
 {
+    [TestCategory( "Mapper tests" )]
     [TestClass]
     public class JsonWriter
     {
@@ -87,7 +88,7 @@ namespace UltraMapper.Json.Test
             Assert.IsTrue( jsonToObj.Simple1 == objToJson.Simple1 );
             Assert.IsTrue( jsonToObj.Simple2 == objToJson.Simple2 );
             Assert.IsTrue( jsonToObj.Simple3 == objToJson.Simple3 );
-           
+
             Assert.IsTrue( jsonToObj.ObjB.Simple1 == objToJson.ObjB.Simple1 );
             Assert.IsTrue( jsonToObj.ObjB.Simple2 == objToJson.ObjB.Simple2 );
             Assert.IsTrue( jsonToObj.ObjB.Simple3 == objToJson.ObjB.Simple3 );

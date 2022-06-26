@@ -1,17 +1,24 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using UltraMapper.Json;
+using UltraMapper.Json.Tests.ParserTests.JsonManglers;
 using UltraMapper.Parsing;
 
-namespace UltraMapper.Json.Test
+namespace UltraMapper.Json.Tests.ParserTests
 {
-    [TestClass]
     public class JsonParserTests
     {
+        private readonly IJsonMangler _mangler;
+
+        public JsonParserTests( IJsonMangler mangler )
+        {
+            _mangler = mangler;
+        }
+
         [TestMethod]
         public void Example1ArrayPrimitiveType()
         {
             string inputJson = "[ 100 , 200, 300, 400, 500 ]";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
@@ -28,6 +35,7 @@ namespace UltraMapper.Json.Test
         public void QuotationContainsSpecialChars()
         {
             string inputJson = @"{ param:""}{\\][\"",:""}";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -42,6 +50,7 @@ namespace UltraMapper.Json.Test
         public void QuotationContainsControlChars()
         {
             string inputJson = @"{param:""\\\""\b\f\n\r\t""}";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -56,6 +65,7 @@ namespace UltraMapper.Json.Test
         public void QuotationContainsUnicodeChars()
         {
             string inputJson = @"{param:""\u0030\u0031""}";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -70,6 +80,7 @@ namespace UltraMapper.Json.Test
         public void EmptyObject()
         {
             string inputJson = @"{}";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -87,6 +98,8 @@ namespace UltraMapper.Json.Test
 				emptyObject : {}
 			}";
 
+            inputJson = _mangler?.Mangle( inputJson );
+
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
@@ -95,7 +108,6 @@ namespace UltraMapper.Json.Test
             Assert.IsTrue( ((ComplexParam)result.SubParams[ 0 ]).SubParams.Count == 0 );
         }
 
-        [Ignore]
         [TestMethod]
         public void EmptySubObject2()
         {
@@ -103,6 +115,8 @@ namespace UltraMapper.Json.Test
 			{ 
 				emptyObject : {,,}
 			}";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -116,6 +130,7 @@ namespace UltraMapper.Json.Test
         public void EmptyArray()
         {
             string inputJson = @"[]";
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
@@ -132,13 +147,16 @@ namespace UltraMapper.Json.Test
 				emptyArray : []
 			}";
 
+            inputJson = _mangler?.Mangle( inputJson );
+
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
-            var arrayParam = (ArrayParam)result.SubParams[ 0 ];
+            var subArrayParam = (ArrayParam)result.SubParams[ 0 ];
 
-            Assert.IsTrue( arrayParam != null );
-            Assert.IsTrue( arrayParam.Items.Count == 0 );
+            Assert.IsTrue( subArrayParam != null );
+            Assert.IsTrue( subArrayParam.Name == "emptyArray" );
+            Assert.IsTrue( subArrayParam.Items.Count == 0 );
         }
 
         [TestMethod]
@@ -148,6 +166,8 @@ namespace UltraMapper.Json.Test
 			[
 				[1,2], [3,4], [5,6]
 			]";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
@@ -177,6 +197,8 @@ namespace UltraMapper.Json.Test
 			[
 				[""1"",""2""], [""3"",4], [5,""6""]
 			]";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
@@ -214,6 +236,8 @@ namespace UltraMapper.Json.Test
 				},
 			]";
 
+            inputJson = _mangler?.Mangle( inputJson );
+
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
 
@@ -240,23 +264,25 @@ namespace UltraMapper.Json.Test
             string inputJson = @" 
 			{
 				unquotedParam: unquotedValue,
-				""quotedParam"": unquotedValue,
+			    ""quotedParam"": unquotedValue,
 				""quotedParam2"": ""quotedValue"",
-				escapedComma:"",""
+				escapedComma: "","",
+                escapedQuoteAndComma: ""\"",\""""
 			}";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
 
             Assert.IsTrue( result.Name == String.Empty );
-            Assert.IsTrue( result.SubParams.Count == 4 );
+            Assert.IsTrue( result.SubParams.Count == 5 );
 
             var param1 = (SimpleParam)result.SubParams[ 0 ];
             Assert.IsTrue( param1.Name == "unquotedParam" );
             Assert.IsTrue( param1.Value == "unquotedValue" );
 
             var param2 = (SimpleParam)result.SubParams[ 1 ];
-
             Assert.IsTrue( param2.Name == "quotedParam" );
             Assert.IsTrue( param2.Value == "unquotedValue" );
 
@@ -267,6 +293,10 @@ namespace UltraMapper.Json.Test
             var param4 = (SimpleParam)result.SubParams[ 3 ];
             Assert.IsTrue( param4.Name == "escapedComma" );
             Assert.IsTrue( param4.Value == "," );
+
+            var param5 = (SimpleParam)result.SubParams[ 4 ];
+            Assert.IsTrue( param5.Name == "escapedQuoteAndComma" );
+            Assert.IsTrue( param5.Value == "\",\"" );
         }
 
         [TestMethod]
@@ -281,6 +311,8 @@ namespace UltraMapper.Json.Test
 					age:32
 				}
 			}";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -321,6 +353,8 @@ namespace UltraMapper.Json.Test
 					{ ""id"": ""5002"", ""type"": ""Glazed"" },
 				]
 			}";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var result = (ComplexParam)parser.Parse( inputJson );
@@ -400,6 +434,8 @@ namespace UltraMapper.Json.Test
 				}
 			]";
 
+            inputJson = _mangler?.Mangle( inputJson );
+
             var parser = new JsonParser();
             var result = (ArrayParam)parser.Parse( inputJson );
 
@@ -477,6 +513,8 @@ namespace UltraMapper.Json.Test
 					{ ""id"" : ""5002"" , ""type""   : ""Glazed"" },
 				]
 	    	}";
+
+            inputJson = _mangler?.Mangle( inputJson );
 
             var parser = new JsonParser();
             var complexParam = (ComplexParam)parser.Parse( inputJson );

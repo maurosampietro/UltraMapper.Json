@@ -1,0 +1,45 @@
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using UltraMapper.Json.Tests.ParserTests.JsonManglers;
+
+namespace UltraMapper.Json.Tests.ParserTests
+{
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class RemoveWhitespacesTests : JsonParserTests
+    {
+        public RemoveWhitespacesTests()
+            : base( new RemoveWhitespacesMangler() )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class AddWhitespacesBeforeSpecialCharsTests : JsonParserTests
+    {
+        public AddWhitespacesBeforeSpecialCharsTests()
+            : base( new AddWhitespacesMangler( addCharBefore: true, addCharAfter: false ) )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class AddWhitespacesAfterSpecialCharsTests : JsonParserTests
+    {
+        public AddWhitespacesAfterSpecialCharsTests()
+            : base( new AddWhitespacesMangler( addCharBefore: false, addCharAfter: true ) )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class AddWhitespacesBeforeAndAfterSpecialCharsTests : JsonParserTests
+    {
+        public AddWhitespacesBeforeAndAfterSpecialCharsTests()
+            : base( new AddWhitespacesMangler( true, true ) )
+        {
+        }
+    }
+}

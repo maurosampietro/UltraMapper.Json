@@ -39,10 +39,10 @@ namespace UltraMapper.Json.Benchmarks
         [Benchmark]
         public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Account>( json );
 
-        [Benchmark]
-        public void Newtonsoft() => JsonConvert.DeserializeObject<Account>( json );
+        //[Benchmark]
+        //public void Newtonsoft() => JsonConvert.DeserializeObject<Account>( json );
 
-        [Benchmark]
-        public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Account>( json );
+        //[Benchmark]
+        //public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Account>( json );
     }
 }

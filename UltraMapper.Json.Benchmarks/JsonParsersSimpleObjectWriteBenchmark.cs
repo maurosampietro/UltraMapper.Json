@@ -32,8 +32,8 @@ namespace UltraMapper.Json.Benchmarks
         [Benchmark]
         public void UltraMapper() => jsonParser.Serialize( account );
 
-        //[Benchmark]
-        //public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Serialize( account );
+        [Benchmark]
+        public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Serialize( account );
 
         //[Benchmark]
         //public void Newtonsoft() => JsonConvert.SerializeObject( account );

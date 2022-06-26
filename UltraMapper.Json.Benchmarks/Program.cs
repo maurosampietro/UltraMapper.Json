@@ -20,24 +20,24 @@ using UltraMapper.Parsing;
 namespace UltraMapper.Json.Benchmarks
 {
     //- STRING TO DATETIME CONVERSION PROBLEMS
-        public class Item
-        {
-            public string id { get; set; }
-            public string ppu { get; set; }
-            public Batters batters { get; set; }
-            public Ingredient[] toppings { get; set; }
-        }
+    public class Item
+    {
+        public string id { get; set; }
+        public string ppu { get; set; }
+        public Batters batters { get; set; }
+        public Ingredient[] toppings { get; set; }
+    }
 
-        public class Batters
-        {
-            public List<Ingredient> batter { get; set; }
-        }
+    public class Batters
+    {
+        public List<Ingredient> batter { get; set; }
+    }
 
-        public class Ingredient
-        {
-            public string id { get; set; }
-            public string type { get; set; }
-        }
+    public class Ingredient
+    {
+        public string id { get; set; }
+        public string type { get; set; }
+    }
 
     class Program
     {
@@ -67,15 +67,15 @@ namespace UltraMapper.Json.Benchmarks
 
         static void Main( string[] args )
         {
-             GetMidStruct<Item>();
+            //GetMidStruct<Item>();
 
-            //var summary = BenchmarkRunner.Run<JsonParsersSimpleObjectWriteBenchmark>( new DebugInProcessConfig() );
+            var summary = BenchmarkRunner.Run( Assembly.GetExecutingAssembly(), new DebugInProcessConfig() );
 
-            //var jsonSer = new JsonSerializer();
-            //var item = jsonSer.Deserialize<Item>( json );
-            //var rijson = jsonSer.Serialize( item );
+            var jsonSer = new JsonSerializer();
+            var item = jsonSer.Deserialize<Item>( json );
+            var rijson = jsonSer.Serialize( item );
 
-            //Console.ReadLine();
+            Console.ReadLine();
         }
 
 
@@ -112,12 +112,12 @@ namespace UltraMapper.Json.Benchmarks
                 else
                 {
                     cp.SubParams.Add( new ComplexParam() { Name = item.Name } );
-                    GetMidStruct(item.GetMemberType());
+                    GetMidStruct( item.GetMemberType() );
                 }
 
             }
 
-            _templates.Add(type, cp);
+            _templates.Add( type, cp );
         }
 
 

@@ -9,6 +9,8 @@ namespace UltraMapper.Json
 {
     internal class JsonParserUsingReadonlySpan : IParser
     {
+        private enum ParseObjectState { PARAM_NAME, PARAM_VALUE }
+
         private const char OBJECT_START_SYMBOL = '{';
         private const char OBJECT_END_SYMBOL = '}';
         private const char ARRAY_START_SYMBOL = '[';
@@ -18,7 +20,9 @@ namespace UltraMapper.Json
         private const char QUOTE_SYMBOL = '"';
         private const char ESCAPE_SYMBOL = '\\';
 
-        private const int MIN_CAPACITY = 8;
+        private const int MIN_CAPACITY = 16;
+
+        private string _paramName = String.Empty;
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool IsWhiteSpace( char c )
@@ -33,14 +37,7 @@ namespace UltraMapper.Json
             // U+000d = <control> CARRIAGE RETURN
             // U+0085 = <control> NEXT LINE
             // U+00a0 = NO-BREAK SPACE
-
-            if( c == ' ' )
-                return true;
-
-            //if( (c & 8) != 8 )
-            //    return false;
-
-            return (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
+            return (c == ' ') || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
 
             ////the above code is faster than:
             //switch( c )
@@ -59,145 +56,109 @@ namespace UltraMapper.Json
 
         public IParsedParam Parse( string text )
         {
-            for( int i = 0; true; i++ )
+            int i = 0;
+            while( IsWhiteSpace( text[ i ] ) )
+                i++;
+
+            char c = text[ i ];
+            switch( c )
             {
-                switch( text[ i ] )
-                {
-                    case OBJECT_START_SYMBOL:
-                    {
-                        i++;
-                        return ParseObject( text, ref i );
-                    }
+                case OBJECT_START_SYMBOL: i++; return ParseObject( text, ref i );
+                case ARRAY_START_SYMBOL: i++; return ParseArray( text, ref i );
 
-                    case ARRAY_START_SYMBOL:
-                    {
-                        i++;
-                        return ParseArray( text, ref i );
-                    }
-                }
+                default: throw new Exception( $"Unexpected symbol '{c}' at position {i}" );
             }
-
-            throw new Exception( $"Expected symbol '{OBJECT_START_SYMBOL}' or '{ARRAY_START_SYMBOL}'" );
         }
 
         private ComplexParam ParseObject( ReadOnlySpan<char> text, ref int i )
         {
-            var parsedParams = new List<IParsedParam>( MIN_CAPACITY );
-            ReadOnlySpan<char> _paramName = String.Empty;
-
-        label:
-
-            while( IsWhiteSpace( text[ i ] ) )
-                i++;
-
-            if( text[ i ] == OBJECT_END_SYMBOL )
+            var cp = new ComplexParam()
             {
-                return new ComplexParam()
-                {
-                    Name = _paramName.ToString(),
-                    SubParams = parsedParams
-                };
-            }
+                Name = String.Empty,
+                SubParams = new List<IParsedParam>( MIN_CAPACITY )
+            };
 
-            _paramName = ParseName( text, ref i );
+            bool isParseName = true;
+            string paramName = String.Empty;
 
-            while( IsWhiteSpace( text[ i ] ) || text[ i ] == PARAM_NAME_VALUE_DELIMITER )
-                i++;
-
-            int startIndex;
-            for( ; true; i++ )
+            for( ; i < text.Length; i++ )
             {
                 while( IsWhiteSpace( text[ i ] ) )
                     i++;
 
                 switch( text[ i ] )
                 {
+                    //case ' ': break;
+                    //case '\x0009': break;
+                    //case '\x000a': break;
+                    //case '\x000b': break;
+                    //case '\x000c': break;
+                    //case '\x000d': break;
+                    //case '\x00a0': break;
+                    //case '\x0085': break;
+
                     case OBJECT_START_SYMBOL:
                     {
                         i++;
-                        string paramName2 = _paramName.ToString();
-                        _paramName = String.Empty;
 
                         var result = ParseObject( text, ref i );
-                        parsedParams.Add( new ComplexParam()
+                        cp.SubParams.Add( new ComplexParam()
                         {
-                            Name = paramName2,
+                            Name = paramName,
                             SubParams = result.SubParams
                         } );
+                        isParseName = true;
                         break;
                     }
 
                     case OBJECT_END_SYMBOL:
                     {
-                        return new ComplexParam()
-                        {
-                            Name = String.Empty,
-                            SubParams = parsedParams
-                        };
+                        return cp;
                     }
 
                     case ARRAY_START_SYMBOL:
                     {
                         i++;
 
-                        string paramname2 = _paramName.ToString();
-                        _paramName = String.Empty;
+                        string paramname2 = paramName;
+                        paramName = String.Empty;
 
                         var result = ParseArray( text, ref i );
                         result.Name = paramname2;
-                        parsedParams.Add( result );
+                        cp.SubParams.Add( result );
+
+                        isParseName = true;
                         break;
                     }
 
                     case PARAMS_DELIMITER:
                     {
-                        i++;
-
-                        while( IsWhiteSpace( text[ i ] ) )
-                            i++;
-
-                        _paramName = ParseName( text, ref i );
-                        //_paramValue = String.Empty;
-                        break;
-                    }
-
-                    case QUOTE_SYMBOL:
-                    {
-                        var simpleParam = new SimpleParam()
-                        {
-                            Name = _paramName.ToString(),
-                            Value = ParseQuotation( text, ref i )
-                        };
-
-                        parsedParams.Add( simpleParam );
+                        paramName = String.Empty;
+                        isParseName = true;
                         break;
                     }
 
                     default:
                     {
-                        startIndex = i;
-                        for( ; true; i++ )
+                        if( isParseName )
                         {
-                            if( IsWhiteSpace( text[ i ] ) )
-                                break;
-
-                            if( text[ i ] == PARAMS_DELIMITER )
-                                break;
+                            paramName = ParseName( text, ref i );
+                            isParseName = false;
+                            break;
                         }
-
-                        parsedParams.Add( new SimpleParam()
+                        else
                         {
-                            Name = _paramName.ToString(),
-                            Value = text[ startIndex..i ].ToString()
-                        } );
+                            var value = ParseValue( text, ref i );
+                            cp.SubParams.Add( new SimpleParam() { Name = paramName, Value = value } );
 
-                        i++;
-                        goto label;
+                            isParseName = true;
+                            break;
+                        }
                     }
                 }
             }
 
-            throw new Exception( $"Expected symbol '{OBJECT_END_SYMBOL}'" );
+            return cp;
         }
 
         private ArrayParam ParseArray( ReadOnlySpan<char> text, ref int i )
@@ -206,8 +167,8 @@ namespace UltraMapper.Json
 
             for( ; true; i++ )
             {
-                while( IsWhiteSpace( text[ i ] ) )
-                    i++;
+                if( IsWhiteSpace( text[ i ] ) )
+                    continue;
 
                 switch( text[ i ] )
                 {
@@ -233,6 +194,8 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
+                        i++;
+
                         items.Add( new SimpleParam()
                         {
                             Value = ParseQuotation( text, ref i )
@@ -255,7 +218,7 @@ namespace UltraMapper.Json
                     {
                         items.Add( new SimpleParam()
                         {
-                            Value = ParseArrayValue( text, ref i )
+                            Value = ParseValue( text, ref i )
                         } );
 
                         i--;
@@ -269,14 +232,100 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        private string ParseName( ReadOnlySpan<char> text, ref int i )
+        {
+            while( IsWhiteSpace( text[ i ] ) )
+                i++;
+
+            switch( text[ i ] )
+            {
+                case QUOTE_SYMBOL:
+
+                    i++;
+                    _paramName = ParseQuotation( text, ref i );
+
+                    for( i++; true; i++ )
+                    {
+                        if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
+                            break;
+                    }
+
+                    return _paramName;
+
+                case ARRAY_END_SYMBOL: return String.Empty;   //after , we search for a new param name but it might be missing and the element be done.
+                case OBJECT_END_SYMBOL: return String.Empty; //after , we search for a new param name but it might be missing and the element be done.
+
+                default:
+                {
+                    int startIndex = i;
+                    for( ; true; i++ )
+                    {
+                        int lastNameCharIndex = i;
+
+                        while( IsWhiteSpace( text[ i ] ) )
+                            i++;
+
+                        if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
+                            return text[ startIndex..lastNameCharIndex ].ToString();
+                    }
+                }
+            }
+        }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        private string ParseValue( ReadOnlySpan<char> text, ref int i )
+        {
+            int startIndex = i;
+
+            for( ; true; i++ )
+            {
+                switch( text[ i ] )
+                {
+                    case QUOTE_SYMBOL:
+                    {
+                        i++;
+                        return ParseQuotation( text, ref i );
+                    }
+
+                    default:
+                    {
+                        if( IsWhiteSpace( text[ i ] ) )
+                        {
+                            startIndex++;
+                            continue;
+                        }
+
+                        for( ; i < text.Length; i++ )
+                        {
+                            if( IsWhiteSpace( text[ i ] ) )
+                                return text[ startIndex..i ].ToString();
+
+                            switch( text[ i ] )
+                            {
+                                case PARAMS_DELIMITER:
+                                case OBJECT_END_SYMBOL:
+                                case ARRAY_END_SYMBOL:
+                                {
+                                    return text[ startIndex..i ].ToString();
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            throw new Exception( $"unxpected symbol" );
+        }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         private string ParseQuotation( ReadOnlySpan<char> text, ref int i )
         {
             bool escapeSymbols = false;
             bool unicodeSymbols = false;
 
-            //this method is call as soon as a " is found, so
-            //we can immediately skip to the next 'i'            
-            for( int startIndex = ++i; true; i++ )
+            int startIndex = i;
+            for( ; true; i++ )
             {
                 switch( text[ i ] )
                 {
@@ -313,7 +362,7 @@ namespace UltraMapper.Json
                                 while( unicodeCharIndex > -1 )
                                 {
                                     string unicodeLiteral = quotation.Substring( unicodeCharIndex, 6 );
-                                    int code = Int32.Parse( unicodeLiteral.Substring( 2 ), System.Globalization.NumberStyles.HexNumber );
+                                    int code = Int32.Parse( unicodeLiteral[ 2.. ], System.Globalization.NumberStyles.HexNumber );
                                     string unicodeChar = Char.ConvertFromUtf32( code );
                                     quotation = quotation.Replace( unicodeLiteral, unicodeChar );
 
@@ -328,76 +377,6 @@ namespace UltraMapper.Json
             }
 
             throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
-        }
-
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseArrayValue( ReadOnlySpan<char> text, ref int i )
-        {
-            //this is already done by the caller
-            //while( IsWhiteSpace( text[ i ] ) )
-            //    i++;
-
-            int startIndex = i;
-            for( ; true; i++ )
-            {
-                switch( text[ i ] )
-                {
-                    case PARAMS_DELIMITER:
-                    case ARRAY_END_SYMBOL:
-                        return text[ startIndex..i ].ToString();
-                }
-
-                //most expensive check = last check
-                if( IsWhiteSpace( text[ i ] ) )
-                    return text[ startIndex..i ].ToString();
-            }
-
-            throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
-        }
-
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseName( ReadOnlySpan<char> text, ref int i )
-        {
-            //this is already done by the caller
-            //while( IsWhiteSpace( text[ i ] ) )
-            //    i++;
-
-            ReadOnlySpan<char> _paramName;
-
-            if( text[ i ] == QUOTE_SYMBOL )
-            {
-                _paramName = ParseQuotation( text, ref i );
-
-                for( i++; true; i++ )
-                {
-                    if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
-                        break;
-                }
-
-                return _paramName.ToString();
-            }
-            else
-            {
-                int startIndex = i;
-                for( ; true; i++ )
-                {
-                    if( IsWhiteSpace( text[ i ] ) )
-                    {
-                        _paramName = text[ startIndex..i ];
-
-                        for( i++; true; i++ )
-                        {
-                            if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
-                                break;
-                        }
-
-                        return _paramName.ToString();
-                    }
-                    
-                    if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
-                        return text[ startIndex..i ].ToString();
-                }
-            }
         }
     }
 }
