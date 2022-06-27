@@ -62,7 +62,7 @@ namespace UltraMapper.Json
                 SubParams = new List<IParsedParam>( MIN_CAPACITY )
             };
 
-            bool isParseName = true;
+            bool isParsingParamName = true;
             string paramName = String.Empty;
 
             for( ; i < text.Length; i++ )
@@ -72,15 +72,6 @@ namespace UltraMapper.Json
 
                 switch( text[ i ] )
                 {
-                    //case ' ': break;
-                    //case '\x0009': break;
-                    //case '\x000a': break;
-                    //case '\x000b': break;
-                    //case '\x000c': break;
-                    //case '\x000d': break;
-                    //case '\x00a0': break;
-                    //case '\x0085': break;
-
                     case OBJECT_START_SYMBOL:
                     {
                         i++;
@@ -91,7 +82,7 @@ namespace UltraMapper.Json
                             Name = paramName,
                             SubParams = result.SubParams
                         } );
-                        isParseName = true;
+                        isParsingParamName = true;
                         break;
                     }
 
@@ -104,30 +95,26 @@ namespace UltraMapper.Json
                     {
                         i++;
 
-                        string paramname2 = paramName;
-                        paramName = String.Empty;
-
                         var result = ParseArray( text, ref i );
-                        result.Name = paramname2;
+                        result.Name = paramName;
                         cp.SubParams.Add( result );
 
-                        isParseName = true;
+                        isParsingParamName = true;
                         break;
                     }
 
                     case PARAMS_DELIMITER:
                     {
-                        paramName = String.Empty;
-                        isParseName = true;
+                        isParsingParamName = true;
                         break;
                     }
 
                     default:
                     {
-                        if( isParseName )
+                        if( isParsingParamName )
                         {
                             paramName = ParseName( text, ref i );
-                            isParseName = false;
+                            isParsingParamName = false;
                             break;
                         }
                         else
@@ -135,7 +122,7 @@ namespace UltraMapper.Json
                             var value = ParseValue( text, ref i );
                             cp.SubParams.Add( new SimpleParam() { Name = paramName, Value = value } );
 
-                            isParseName = true;
+                            isParsingParamName = true;
                             break;
                         }
                     }

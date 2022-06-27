@@ -60,6 +60,52 @@ namespace UltraMapper.Json.Benchmarks
 
         }
 
+
+        [Benchmark]
+        public void ManualMapping()
+        {
+            var Parser = new JsonParser();
+            var parsedContent = (ComplexParam)Parser.Parse( json );
+
+            Item result = new Item();
+
+            foreach( var item in parsedContent.SubParams )
+            {
+                switch( item.Name )
+                {
+                    case "ppu": result.ppu = ((SimpleParam)item).Value; break;
+                    case "id": result.id = ((SimpleParam)item).Value; break;
+                    case "batters":
+                    {
+                        result.batters = new Batters();
+
+                        foreach( var battersItems in ((ComplexParam)item).SubParams )
+                        {
+                            result.batters.batter = new List<Ingredient>();
+
+                            foreach( ComplexParam bat in ((ArrayParam)battersItems).Items )
+                            {
+                                var newBatter = new Ingredient();
+
+                                foreach( var subBat in bat.SubParams )
+                                {
+                                    switch( subBat.Name )
+                                    {
+                                        case "id": newBatter.id = ((SimpleParam)subBat).Value; break;
+                                        case "type": newBatter.type = ((SimpleParam)subBat).Value; break;
+                                    }
+                                }
+
+                                result.batters.batter.Add( newBatter );
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
         [Benchmark]
         public void UltraMapper() => jsonParser.Deserialize( json );
 

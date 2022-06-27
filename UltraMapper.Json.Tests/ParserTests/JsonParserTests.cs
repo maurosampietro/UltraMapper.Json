@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using UltraMapper.Json.Tests.ParserTests.JsonManglers;
 using UltraMapper.Parsing;
 
@@ -7,21 +8,29 @@ namespace UltraMapper.Json.Tests.ParserTests
 {
     public class JsonParserTests
     {
-        private readonly IJsonMangler _mangler;
+        private readonly IJsonMangler[] _manglers;
 
-        public JsonParserTests( IJsonMangler mangler )
+        public JsonParserTests( params IJsonMangler[] manglers )
         {
-            _mangler = mangler;
+            _manglers = manglers ?? new[] { new DoNothingMangler() };
+        }
+
+        private string Mangle( string json )
+        {
+            if( _manglers == null ) return json;
+
+            return _manglers.Aggregate( json,
+                ( aggJson, mangler ) => mangler.Mangle( aggJson ) );
         }
 
         [TestMethod]
         public void Example1ArrayPrimitiveType()
         {
-            string inputJson = "[ 100 , 200, 300, 400, 500 ]";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = "[ 100 , 200, 300, 400, 500 ]";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result.Items.Count == 5 );
             Assert.IsTrue( ((SimpleParam)result.Items[ 0 ]).Value == "100" );
@@ -34,11 +43,11 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void QuotationContainsSpecialChars()
         {
-            string inputJson = @"{ param:""}{\\][\"",:""}";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = @"{ param:""}{\\][\"",:""}";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             var param = (SimpleParam)result.SubParams[ 0 ];
 
@@ -49,11 +58,11 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void QuotationContainsControlChars()
         {
-            string inputJson = @"{param:""\\\""\b\f\n\r\t""}";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = @"{param:""\\\""\b\f\n\r\t""}";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             var param = (SimpleParam)result.SubParams[ 0 ];
 
@@ -64,11 +73,11 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void QuotationContainsUnicodeChars()
         {
-            string inputJson = @"{param:""\u0030\u0031""}";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = @"{param:""\u0030\u0031""}";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             var param = (SimpleParam)result.SubParams[ 0 ];
 
@@ -79,11 +88,11 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void EmptyObject()
         {
-            string inputJson = @"{}";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = @"{}";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             Assert.IsTrue( result != null );
             Assert.IsTrue( result.Name == String.Empty );
@@ -93,15 +102,15 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void EmptySubObject()
         {
-            string inputJson = @"
+            string json = @"
 			{ 
 				emptyObject : {}
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             Assert.IsTrue( result.SubParams.Count == 1 );
             Assert.IsTrue( result.SubParams[ 0 ].Name == "emptyObject" );
@@ -111,15 +120,15 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void EmptySubObject2()
         {
-            string inputJson = @"
+            string json = @"
 			{ 
 				emptyObject : {,,}
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             Assert.IsTrue( result.SubParams.Count == 1 );
             Assert.IsTrue( result.SubParams[ 0 ].Name == "emptyObject" );
@@ -129,11 +138,11 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void EmptyArray()
         {
-            string inputJson = @"[]";
-            inputJson = _mangler?.Mangle( inputJson );
+            string json = @"[]";
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result != null );
             Assert.IsTrue( result.Items.Count == 0 );
@@ -142,15 +151,15 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void EmptySubArray()
         {
-            string inputJson = @"
+            string json = @"
 			{ 
 				emptyArray : []
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             var subArrayParam = (ArrayParam)result.SubParams[ 0 ];
 
@@ -162,15 +171,15 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void SubArrays()
         {
-            string inputJson = @"
+            string json = @"
 			[
 				[1,2], [3,4], [5,6]
 			]";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result.Items.Count == 3 );
 
@@ -193,15 +202,15 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void SubArraysQuotedUnquotedElements()
         {
-            string inputJson = @"
+            string json = @"
 			[
 				[""1"",""2""], [""3"",4], [5,""6""]
 			]";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result.Items.Count == 3 );
 
@@ -222,9 +231,9 @@ namespace UltraMapper.Json.Tests.ParserTests
         }
 
         [TestMethod]
-        public void Example2ArrayOfComplexObject()
+        public void Example2ArrayOfComplexObjects()
         {
-            string inputJson = @"
+            string json = @"
 			[
 				{
 					color: ""red"",
@@ -236,10 +245,10 @@ namespace UltraMapper.Json.Tests.ParserTests
 				},
 			]";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result.Items.Count == 2 );
 
@@ -261,7 +270,7 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void Example3Object()
         {
-            string inputJson = @" 
+            string json = @" 
 			{
 				unquotedParam: unquotedValue,
 			    ""quotedParam"": unquotedValue,
@@ -270,10 +279,10 @@ namespace UltraMapper.Json.Tests.ParserTests
                 escapedQuoteAndComma: ""\"",\""""
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             Assert.IsTrue( result.Name == String.Empty );
             Assert.IsTrue( result.SubParams.Count == 5 );
@@ -302,7 +311,7 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void Example3ObjectWithSubobject()
         {
-            string inputJson = @" 
+            string json = @" 
 			{
 				color: ""red"",
 				user:
@@ -312,10 +321,10 @@ namespace UltraMapper.Json.Tests.ParserTests
 				}
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             var param1 = (SimpleParam)result.SubParams[ 0 ];
             var param2 = (ComplexParam)result.SubParams[ 1 ];
@@ -333,7 +342,7 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void Example4HighlyNestedComplexObject()
         {
-            string inputJson = @"
+            string json = @"
 			{
 				""id"": ""0001"",
 				""ppu"": 0.55,
@@ -354,10 +363,10 @@ namespace UltraMapper.Json.Tests.ParserTests
 				]
 			}";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( inputJson );
+            var result = (ComplexParam)parser.Parse( json );
 
             Assert.IsTrue( result.SubParams.Count == 4 );
 
@@ -411,7 +420,7 @@ namespace UltraMapper.Json.Tests.ParserTests
         [TestMethod]
         public void Example5ArrayOfHighlyNestedComplexObjects()
         {
-            string inputJson = @"
+            string json = @"
 			[
 				{
 					""id"": ""0003"",
@@ -434,91 +443,14 @@ namespace UltraMapper.Json.Tests.ParserTests
 				}
 			]";
 
-            inputJson = _mangler?.Mangle( inputJson );
+            json = Mangle( json );
 
             var parser = new JsonParser();
-            var result = (ArrayParam)parser.Parse( inputJson );
+            var result = (ArrayParam)parser.Parse( json );
 
             Assert.IsTrue( result.Items.Count == 1 );
 
             var complexParam = (ComplexParam)result.Items[ 0 ];
-            Assert.IsTrue( complexParam.SubParams.Count == 4 );
-
-            Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Name == "id" );
-            Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Value == "0003" );
-
-            Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 1 ]).Name == "ppu" );
-            Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 1 ]).Value == "0.55" );
-
-            var subComplexParam = (ComplexParam)complexParam.SubParams[ 2 ];
-            Assert.IsTrue( subComplexParam.Name == "batters" );
-
-            var subArray = (ArrayParam)subComplexParam.SubParams[ 0 ];
-            Assert.IsTrue( subArray.Items.Count == 2 );
-            Assert.IsTrue( subArray.Name == "batter" );
-
-            var complexSubArrayItem1 = (ComplexParam)subArray.Items[ 0 ];
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 0 ]).Name == "id" );
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 0 ]).Value == "1001" );
-
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 1 ]).Name == "type" );
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 1 ]).Value == "Regular" );
-
-            var complexSubArrayItem2 = (ComplexParam)subArray.Items[ 1 ];
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 0 ]).Name == "id" );
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 0 ]).Value == "1002" );
-
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 1 ]).Name == "type" );
-            Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 1 ]).Value == "Chocolate" );
-
-            var subArray2 = (ArrayParam)complexParam.SubParams[ 3 ];
-            Assert.IsTrue( subArray2.Items.Count == 2 );
-            Assert.IsTrue( subArray2.Name == "toppings" );
-
-            var complexArrayItem1 = (ComplexParam)subArray2.Items[ 0 ];
-            Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 0 ]).Name == "id" );
-            Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 0 ]).Value == "5001" );
-
-            Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 1 ]).Name == "type" );
-            Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 1 ]).Value == "None" );
-
-            var complexArrayItem2 = (ComplexParam)subArray2.Items[ 1 ];
-            Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 0 ]).Name == "id" );
-            Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 0 ]).Value == "5002" );
-
-            Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Name == "type" );
-            Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Value == "Glazed" );
-        }
-
-        [TestMethod]
-        public void Example6HighlyNestedComplexObjectWithALotOfSpaces()
-        {
-            string inputJson = @"
-    		{
-				""id""   :   ""0003""   ,
-				""ppu""  :   0.55   ,  
-					
-				""batters""  :
-				{
-					""batter""   :
-    				[ 
-   						{ ""id""  : ""1001""  , ""type""    : ""Regular""  }     ,
-   						{ ""id""  : ""1002""  , ""type""    : ""Chocolate""     }
-					]
-				}   ,
-					
-				""toppings""   :    
-				[
-					{ ""id"" : ""5001"" , ""type""   : ""None"" },
-					{ ""id"" : ""5002"" , ""type""   : ""Glazed"" },
-				]
-	    	}";
-
-            inputJson = _mangler?.Mangle( inputJson );
-
-            var parser = new JsonParser();
-            var complexParam = (ComplexParam)parser.Parse( inputJson );
-
             Assert.IsTrue( complexParam.SubParams.Count == 4 );
 
             Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Name == "id" );

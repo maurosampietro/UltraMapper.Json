@@ -5,6 +5,14 @@ namespace UltraMapper.Json.Tests.ParserTests
 {
     [TestCategory( "Parser tests" )]
     [TestClass]
+    public class DefaultTests : JsonParserTests
+    {
+        public DefaultTests()
+            : base( new DoNothingMangler() ) { }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
     public class RemoveWhitespacesTests : JsonParserTests
     {
         public RemoveWhitespacesTests()
@@ -39,6 +47,36 @@ namespace UltraMapper.Json.Tests.ParserTests
     {
         public AddWhitespacesBeforeAndAfterSpecialCharsTests()
             : base( new AddWhitespacesMangler( true, true ) )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class AddCommasAndAddWhitespacesBeforeAndAfterSpecialCharsTests : JsonParserTests
+    {
+        public AddCommasAndAddWhitespacesBeforeAndAfterSpecialCharsTests()
+            : base( new AddCommasMangler(), new AddWhitespacesMangler( true, true ) )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class AddCommasTests : JsonParserTests
+    {
+        public AddCommasTests()
+            : base( new AddCommasMangler() )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class RemoveWhiteSpacesAndAddCommasTests : JsonParserTests
+    {
+        public RemoveWhiteSpacesAndAddCommasTests()
+            : base( new RemoveWhitespacesMangler(), new AddCommasMangler() )
         {
         }
     }

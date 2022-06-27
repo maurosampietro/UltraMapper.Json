@@ -69,7 +69,7 @@ namespace UltraMapper.Json.Benchmarks
         {
             //GetMidStruct<Item>();
 
-            var summary = BenchmarkRunner.Run( Assembly.GetExecutingAssembly(), new DebugInProcessConfig() );
+            var summary = BenchmarkRunner.Run<JsonParsersComplexObjectBenchmark>( new DebugInProcessConfig() );
 
             var jsonSer = new JsonSerializer();
             var item = jsonSer.Deserialize<Item>( json );
@@ -121,50 +121,6 @@ namespace UltraMapper.Json.Benchmarks
         }
 
 
-        private static void manualMapping()
-        {
-
-            var Parser = new JsonParser();
-            var parsedContent = (ComplexParam)Parser.Parse( json );
-
-            Item result = new Item();
-
-            foreach( var item in parsedContent.SubParams )
-            {
-                switch( item.Name )
-                {
-                    case "ppu": result.ppu = ((SimpleParam)item).Value; break;
-                    case "id": result.id = ((SimpleParam)item).Value; break;
-                    case "batters":
-                    {
-                        result.batters = new Batters();
-
-                        foreach( var battersItems in ((ComplexParam)item).SubParams )
-                        {
-                            result.batters.batter = new List<Ingredient>();
-
-                            foreach( ComplexParam bat in ((ArrayParam)battersItems).Items )
-                            {
-                                var newBatter = new Ingredient();
-
-                                foreach( var subBat in bat.SubParams )
-                                {
-                                    switch( subBat.Name )
-                                    {
-                                        case "id": newBatter.id = ((SimpleParam)subBat).Value; break;
-                                        case "type": newBatter.type = ((SimpleParam)subBat).Value; break;
-                                    }
-                                }
-
-                                result.batters.batter.Add( newBatter );
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-        }
+   
     }
 }

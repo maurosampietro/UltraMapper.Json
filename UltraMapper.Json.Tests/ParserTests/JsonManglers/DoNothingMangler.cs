@@ -1,6 +1,6 @@
 ﻿namespace UltraMapper.Json.Tests.ParserTests.JsonManglers
 {
-    public class DefaultMangler : IJsonMangler
+    public class DoNothingMangler : IJsonMangler
     {
         public string Mangle( string json )
         {
