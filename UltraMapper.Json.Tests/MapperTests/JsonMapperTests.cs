@@ -3,10 +3,11 @@ using System.Collections.Generic;
 
 namespace UltraMapper.Json.Tests.MapperTests
 {
-    [TestCategory("Mapper tests")]
+    [TestCategory( "Mapper tests" )]
     [TestClass]
     public class JsonMapperTests
     {
+        //How to handle array capacity?
         //[TestMethod]
         //public void Example1ArrayPrimitiveType()
         //{
@@ -23,6 +24,22 @@ namespace UltraMapper.Json.Tests.MapperTests
         //    Assert.IsTrue( result[ 4 ] == 500 );
         //}
 
+        [TestMethod]
+        public void Example1ListPrimitiveType()
+        {
+            string inputJson = "[ 100, 200, 300, 400, 500 ]";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<List<int>>( inputJson );
+
+            Assert.IsTrue( result.Count == 5 );
+            Assert.IsTrue( result[ 0 ] == 100 );
+            Assert.IsTrue( result[ 1 ] == 200 );
+            Assert.IsTrue( result[ 2 ] == 300 );
+            Assert.IsTrue( result[ 3 ] == 400 );
+            Assert.IsTrue( result[ 4 ] == 500 );
+        }
+
         public class ColorValue
         {
             public string Color { get; set; }
@@ -33,24 +50,27 @@ namespace UltraMapper.Json.Tests.MapperTests
         public void Example2ArrayOfComplexObject()
         {
             string inputJson = @"
-		[
-			{
-				color: ""red"",
-				value: ""#f00""
-			},
-			{
-				color: ""green"",
-				value: ""#0f0""
-			},
-		]";
+		    [
+			    {
+				    value: ""#f00"",
+                    color: ""red"",			
+			    },
+			    {
+				    color: ""green"",
+				    value: ""#0f0""
+			    },
+		    ]";
 
             var parser = new JsonSerializer();
             var result = parser.Deserialize<List<ColorValue>>( inputJson );
 
             Assert.IsTrue( result.Count == 2 );
 
+            Assert.IsTrue( result[ 0 ].Color == "red" );
             Assert.IsTrue( result[ 0 ].Value == "#f00" );
-            Assert.IsTrue( result[ 0 ].Value == "#0f0" );
+
+            Assert.IsTrue( result[ 1 ].Color == "green" );
+            Assert.IsTrue( result[ 1 ].Value == "#0f0" );
         }
 
         private class Example3Class
@@ -62,7 +82,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void MapObject()
+        public void QuotedAndUnquotedParamsAndValues()
         {
             string inputJson = @" 
 			{
@@ -318,6 +338,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         //}
     }
 
+    [TestCategory( "Mapper tests" )]
     [TestClass]
     public class Example4
     {
@@ -388,6 +409,63 @@ namespace UltraMapper.Json.Tests.MapperTests
             var tItem1 = result.toppings[ 1 ];
             Assert.IsTrue( tItem1.id == "5002" );
             Assert.IsTrue( tItem1.type == "Glazed" );
+        }
+    }
+
+    [TestCategory( "Mapper deserializing tests" )]
+    [TestClass]
+    public class Example5
+    {
+        public class Commands2
+        {
+            public class InnerType
+            {
+                public string A { get; set; }
+                public string B { get; set; }
+                public InnerType Inner2 { get; set; }
+            }
+
+            public InnerType Move { get; set; }
+        }
+
+        [TestMethod]
+        public void CircularReferenceWhenReading()
+        {
+            var json = @"
+            {
+                move:
+                {
+                    a : a,
+                    b : b,
+                    inner2:
+                    {
+                        a:aa,
+                        b:bb,
+                        inner2:
+                        {
+                            a:aaa,
+                            b:bbb,
+                            inner2:
+                            {
+                                a:aaaa, 
+                                b:bbbb
+                            }
+                        }
+                    }
+                }
+            }";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<Commands2>( json );
+
+            Assert.IsTrue( result.Move.A == "a" );
+            Assert.IsTrue( result.Move.B == "b" );
+            Assert.IsTrue( result.Move.Inner2.A == "aa" );
+            Assert.IsTrue( result.Move.Inner2.B == "bb" );
+            Assert.IsTrue( result.Move.Inner2.Inner2.A == "aaa" );
+            Assert.IsTrue( result.Move.Inner2.Inner2.B == "bbb" );
+            Assert.IsTrue( result.Move.Inner2.Inner2.Inner2.A == "aaaa" );
+            Assert.IsTrue( result.Move.Inner2.Inner2.Inner2.B == "bbbb" );
         }
     }
 }

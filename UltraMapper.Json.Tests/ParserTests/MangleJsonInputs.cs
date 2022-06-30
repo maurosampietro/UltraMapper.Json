@@ -8,7 +8,7 @@ namespace UltraMapper.Json.Tests.ParserTests
     public class DefaultTests : JsonParserTests
     {
         public DefaultTests()
-            : base( new DoNothingMangler() ) { }
+            : base( new DoNothingMangler() ) { } //passing null is also ok :)
     }
 
     [TestCategory( "Parser tests" )]

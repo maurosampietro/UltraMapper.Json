@@ -2,7 +2,7 @@
 
 namespace UltraMapper.Json.Tests.MapperTests
 {
-    [TestCategory( "Mapper tests" )]
+    [TestCategory( "Mapper serialize tests" )]
     [TestClass]
     public class JsonWriter
     {
@@ -32,7 +32,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void CircularReference()
+        public void CircularReferenceWhenWriting()
         {
             var objToJson = new CircularReferenceObject()
             {

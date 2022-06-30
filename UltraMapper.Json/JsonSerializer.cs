@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
+using UltraMapper.Internals;
 using UltraMapper.Json.UltraMapper.Extensions;
 using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
@@ -38,12 +40,12 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
             } );
-       } );
+        } );
 
         private readonly Action<ReferenceTracker, object, object> _desMap;
         private readonly Action<ReferenceTracker, object, object> _serMap;
@@ -54,7 +56,7 @@ namespace UltraMapper.Json
                 s => DateTime.Parse( s, Culture ) );
 
             _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
-            _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;                       
+            _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
         }
 
         public JsonSerializer( IParser parser )
@@ -86,7 +88,7 @@ namespace UltraMapper.Json
         }
     }
 
-    public sealed class JsonSerializer 
+    public sealed class JsonSerializer
     {
         private readonly ReferenceTracker _referenceTracker = new ReferenceTracker();
         private readonly JsonString _jsonString = new JsonString();
@@ -114,12 +116,12 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
             } );
-       } );
+        } );
 
         private Type lastMapType = null;
         private Action<ReferenceTracker, object, object> _map;
@@ -149,7 +151,11 @@ namespace UltraMapper.Json
             if( lastMapType != typeof( T ) )
             {
                 lastMapType = typeof( T );
-                _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
+
+                if( typeof( T ).IsEnumerable() && !typeof( T ).IsBuiltIn( true ) )
+                    _map = Mapper.Config[ typeof( ArrayParam ), typeof( T ) ].MappingFunc;
+                else
+                    _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
             _map( null, parsedContent, instance );

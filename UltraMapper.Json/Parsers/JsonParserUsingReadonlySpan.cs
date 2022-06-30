@@ -9,8 +9,6 @@ namespace UltraMapper.Json
 {
     internal class JsonParserUsingReadonlySpan : IParser
     {
-        private enum ParseObjectState { PARAM_NAME, PARAM_VALUE }
-
         private const char OBJECT_START_SYMBOL = '{';
         private const char OBJECT_END_SYMBOL = '}';
         private const char ARRAY_START_SYMBOL = '[';
@@ -20,44 +18,10 @@ namespace UltraMapper.Json
         private const char QUOTE_SYMBOL = '"';
         private const char ESCAPE_SYMBOL = '\\';
 
-        private const int MIN_CAPACITY = 16;
-
-        private string _paramName = String.Empty;
-
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        public static bool IsWhiteSpace( char c )
-        {
-            // There are characters which belong to UnicodeCategory.Control but are considered as white spaces.
-            // We use code point comparisons for these characters here as a temporary fix.
-
-            // U+0009 = <control> HORIZONTAL TAB
-            // U+000a = <control> LINE FEED
-            // U+000b = <control> VERTICAL TAB
-            // U+000c = <contorl> FORM FEED
-            // U+000d = <control> CARRIAGE RETURN
-            // U+0085 = <control> NEXT LINE
-            // U+00a0 = NO-BREAK SPACE
-            return (c == ' ') || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
-
-            ////the above code is faster than:
-            //switch( c )
-            //{
-            //    case ' ': return true;
-            //    case '\x0009': return true;
-            //    case '\x000a': return true;
-            //    case '\x000b': return true;
-            //    case '\x000c': return true;
-            //    case '\x000d': return true;
-            //    case '\x00a0': return true;
-            //    case '\x0085': return true;
-            //    default: return false;
-            //}
-        }
-
         public IParsedParam Parse( string text )
         {
             int i = 0;
-            while( IsWhiteSpace( text[ i ] ) )
+            while( text[ i ].IsWhiteSpace() )
                 i++;
 
             switch( text[ i ] )
@@ -74,7 +38,7 @@ namespace UltraMapper.Json
             var cp = new ComplexParam()
             {
                 Name = String.Empty,
-                SubParams = new List<IParsedParam>( MIN_CAPACITY )
+                SubParams = new List<IParsedParam>()
             };
 
             bool isParsingParamName = true;
@@ -82,7 +46,7 @@ namespace UltraMapper.Json
 
             for( ; i < text.Length; i++ )
             {
-                while( IsWhiteSpace( text[ i ] ) )
+                while( text[ i ].IsWhiteSpace() )
                     i++;
 
                 switch( text[ i ] )
@@ -134,7 +98,19 @@ namespace UltraMapper.Json
                         }
                         else
                         {
-                            var value = ParseValue( text, ref i );
+                            string value = String.Empty;
+                            if( text[ i ] == QUOTE_SYMBOL )
+                            {
+                                i++;
+                                value = ParseQuotation( text, ref i );
+                            }
+                            else
+                            {
+
+                                value = ParseValue( text, ref i );
+                                if( value == "null" ) value = null;
+                            }
+
                             cp.SubParams.Add( new SimpleParam() { Name = paramName, Value = value } );
 
                             isParsingParamName = true;
@@ -151,9 +127,9 @@ namespace UltraMapper.Json
         {
             var items = new ArrayParam();
 
-            for( ; true; i++ )
+            for( ; i < text.Length; i++ )
             {
-                if( IsWhiteSpace( text[ i ] ) )
+                if( text[ i ].IsWhiteSpace() )
                     continue;
 
                 switch( text[ i ] )
@@ -202,9 +178,22 @@ namespace UltraMapper.Json
 
                     default:
                     {
+                        string value = String.Empty;
+                        if( text[ i ] == QUOTE_SYMBOL )
+                        {
+                            i++;
+                            value = ParseQuotation( text, ref i );
+                        }
+                        else
+                        {
+
+                            value = ParseValue( text, ref i );
+                            if( value == "null" ) value = null;
+                        }
+
                         items.Add( new SimpleParam()
                         {
-                            Value = ParseValue( text, ref i )
+                            Value = value
                         } );
 
                         i--;
@@ -220,7 +209,7 @@ namespace UltraMapper.Json
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         private string ParseName( ReadOnlySpan<char> text, ref int i )
         {
-            while( IsWhiteSpace( text[ i ] ) )
+            while( text[ i ].IsWhiteSpace() )
                 i++;
 
             switch( text[ i ] )
@@ -228,7 +217,7 @@ namespace UltraMapper.Json
                 case QUOTE_SYMBOL:
 
                     i++;
-                    _paramName = ParseQuotation( text, ref i );
+                    string paramName = ParseQuotation( text, ref i );
 
                     for( i++; true; i++ )
                     {
@@ -236,7 +225,7 @@ namespace UltraMapper.Json
                             break;
                     }
 
-                    return _paramName;
+                    return paramName;
 
                 case ARRAY_END_SYMBOL: return String.Empty;   //after , we search for a new param name but it might be missing and the element be done.
                 case OBJECT_END_SYMBOL: return String.Empty; //after , we search for a new param name but it might be missing and the element be done.
@@ -248,7 +237,7 @@ namespace UltraMapper.Json
                     {
                         int lastNameCharIndex = i;
 
-                        while( IsWhiteSpace( text[ i ] ) )
+                        while( text[ i ].IsWhiteSpace() )
                             i++;
 
                         if( text[ i ] == PARAM_NAME_VALUE_DELIMITER )
@@ -275,7 +264,7 @@ namespace UltraMapper.Json
 
                     default:
                     {
-                        if( IsWhiteSpace( text[ i ] ) )
+                        if( text[ i ].IsWhiteSpace() )
                         {
                             startIndex++;
                             continue;
@@ -283,7 +272,7 @@ namespace UltraMapper.Json
 
                         for( ; i < text.Length; i++ )
                         {
-                            if( IsWhiteSpace( text[ i ] ) )
+                            if( text[ i ].IsWhiteSpace() )
                                 return text[ startIndex..i ].ToString();
 
                             switch( text[ i ] )

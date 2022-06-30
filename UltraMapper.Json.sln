@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltraMapper.Json", "UltraMa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltraMapper.Json.Benchmarks", "UltraMapper.Json.Benchmarks\UltraMapper.Json.Benchmarks.csproj", "{23EB7E96-70F4-4E5E-AE1A-F381B1320606}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UltraMapper.Json.Tests", "UltraMapper.Json.Tests\UltraMapper.Json.Tests.csproj", "{238AD7F8-E880-4DF9-8310-78A479E2A5A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltraMapper.Json.Tests", "UltraMapper.Json.Tests\UltraMapper.Json.Tests.csproj", "{238AD7F8-E880-4DF9-8310-78A479E2A5A9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltraMapper.Parsing", "..\UltraMapper.Parsing\UltraMapper.Parsing\UltraMapper.Parsing.csproj", "{70C903B0-4CAF-4CF7-82E1-0D64EBD89669}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{238AD7F8-E880-4DF9-8310-78A479E2A5A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{238AD7F8-E880-4DF9-8310-78A479E2A5A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{238AD7F8-E880-4DF9-8310-78A479E2A5A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70C903B0-4CAF-4CF7-82E1-0D64EBD89669}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70C903B0-4CAF-4CF7-82E1-0D64EBD89669}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70C903B0-4CAF-4CF7-82E1-0D64EBD89669}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70C903B0-4CAF-4CF7-82E1-0D64EBD89669}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

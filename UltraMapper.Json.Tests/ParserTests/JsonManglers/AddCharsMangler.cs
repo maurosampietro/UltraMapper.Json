@@ -8,7 +8,7 @@ namespace UltraMapper.Json.Tests.ParserTests.JsonManglers
         private readonly bool _addCharBefore;
         private readonly bool _addCharAfter;
         private readonly char _charToInsert;
-        private char[] _charsToLookFor;
+        private readonly char[] _charsToLookFor;
 
         public AddCharsMangler( char charToInsert, char[] charsToLookFor, bool addCharBefore, bool addCharAfter )
         {
@@ -27,7 +27,8 @@ namespace UltraMapper.Json.Tests.ParserTests.JsonManglers
 
             foreach( var c in json )
             {
-                if( c == '"' && !isEscaped ) isQuoted = !isQuoted;
+                if( c == '"' && !isEscaped ) 
+                    isQuoted = !isQuoted;
 
                 isEscaped = c == '\\';
 
