@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using UltraMapper.Parsing;
 
 namespace UltraMapper.Json.Tests.MapperTests
 {
@@ -410,6 +411,70 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( tItem1.id == "5002" );
             Assert.IsTrue( tItem1.type == "Glazed" );
         }
+
+
+        [TestMethod]
+        public void SetParamToNullComplexParam()
+        {
+            string inputJson = @"
+			{
+				""id"": ""0001"",
+				""ppu"": 0.55	,
+
+				""batters"": null		
+				""toppings"": null
+			}";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<Item>( inputJson );
+
+            Assert.IsTrue( result.id == "0001" );
+            Assert.IsTrue( result.ppu == "0.55" );
+
+            Assert.IsTrue( result.batters == null );
+            Assert.IsTrue( result.toppings == null );
+        }
+
+        [TestMethod]
+        public void SetParamToNullArrayItem()
+        {
+            string inputJson = @"
+			{
+				""id"": ""0001"",
+				""ppu"": 0.55	,
+
+				""batters"":
+				{
+					""batter"":
+					[
+						null,
+						{ ""id"": ""1002"", ""type"": ""Chocolate"" },
+					]
+				},
+				
+				""toppings"":
+				[
+					{ ""id"": ""5001"", ""type"": ""None"" },
+					null,
+				]
+			}";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<Item>( inputJson );
+
+            Assert.IsTrue( result.id == "0001" );
+            Assert.IsTrue( result.ppu == "0.55" );
+
+            Assert.IsTrue( result.batters.batter.Count == 2 );
+            Assert.IsTrue( result.batters.batter[ 0 ] == null );
+            Assert.IsTrue( result.batters.batter[ 1 ].id == "1002" );
+            Assert.IsTrue( result.batters.batter[ 1 ].type == "Chocolate" );
+
+            Assert.IsTrue( result.toppings.Length == 2 );
+            Assert.IsTrue( result.toppings[ 0 ] == null );
+            Assert.IsTrue( result.toppings[ 1 ].id == "5002" );
+            Assert.IsTrue( result.toppings[ 1 ].type == "Glazed" );
+        }
     }
 
     [TestCategory( "Mapper deserializing tests" )]
@@ -466,6 +531,25 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( result.Move.Inner2.Inner2.B == "bbb" );
             Assert.IsTrue( result.Move.Inner2.Inner2.Inner2.A == "aaaa" );
             Assert.IsTrue( result.Move.Inner2.Inner2.Inner2.B == "bbbb" );
+        }
+
+        [TestMethod]
+        public void SetParamToNullSimpleParam()
+        {
+            string json = @"
+			{
+				color: null,
+				value: ""null""
+			}";
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( json );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Name == "color" );
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Value == null );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Name == "value" );
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Value == "null" );
         }
     }
 }

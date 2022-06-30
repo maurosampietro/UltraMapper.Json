@@ -519,5 +519,33 @@ namespace UltraMapper.Json.Tests.ParserTests
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Name == "value" );
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Value == "null" );
         }
+
+        [TestMethod]
+        public void SetArrayItemToNull()
+        {
+            string json = @"
+			{
+				colors:
+                [
+                    red,
+                    green,
+                    null,
+                    yellow
+				]
+			}";
+
+            json = Mangle( json );
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( json );
+
+            var colorsArray = (ArrayParam)result.SubParams[ 0 ];
+
+            Assert.IsTrue( colorsArray.Name == "colors" );
+            Assert.IsTrue( ((SimpleParam)colorsArray[ 0 ]).Value == "red" );
+            Assert.IsTrue( ((SimpleParam)colorsArray[ 1 ]).Value == "green" );
+            Assert.IsTrue( ((SimpleParam)colorsArray[ 2 ]).Value == null );
+            Assert.IsTrue( ((SimpleParam)colorsArray[ 3 ]).Value == "yellow" );
+        }
     }
 }

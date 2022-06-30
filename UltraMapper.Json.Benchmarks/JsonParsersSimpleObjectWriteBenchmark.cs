@@ -16,7 +16,8 @@ namespace UltraMapper.Json.Benchmarks
             public string Email { get; set; }
             public bool Active { get; set; }
             public string CreatedDate { get; set; }
-            public IList<string> Roles { get; set; }
+            public string MobilePhoneNumber { get; set; }
+            public DateTime Birthday { get; set; }
         }
 
         private Account account = new Account()
@@ -24,7 +25,8 @@ namespace UltraMapper.Json.Benchmarks
             Email = "james@example.com",
             Active = true,
             CreatedDate = DateTime.Now.ToLongDateString(),
-            Roles = new[] { "User", "Admin" }
+            MobilePhoneNumber = "555-666-777-888",
+            Birthday = new DateTime( 1990, 12, 31 )
         };
 
         private static readonly JsonSerializer<Account> jsonParser = new JsonSerializer<Account>();
