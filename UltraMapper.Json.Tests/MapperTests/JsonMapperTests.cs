@@ -8,22 +8,42 @@ namespace UltraMapper.Json.Tests.MapperTests
     [TestClass]
     public class JsonMapperTests
     {
-        //How to handle array capacity?
-        //[TestMethod]
-        //public void Example1ArrayPrimitiveType()
-        //{
-        //    string inputJson = "[ 100, 200, 300, 400, 500 ]";
+        [TestMethod]
+        public void Example1ArrayPrimitiveType()
+        {
+            string inputJson = "[ 100, 200, 300, 400, 500 ]";
 
-        //    var parser = new JsonSerializer();
-        //    var result = parser.Deserialize<int[]>( inputJson );
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<int[]>( inputJson );
 
-        //    Assert.IsTrue( result.Length == 5 );
-        //    Assert.IsTrue( result[ 0 ] == 100 );
-        //    Assert.IsTrue( result[ 1 ] == 200 );
-        //    Assert.IsTrue( result[ 2 ] == 300 );
-        //    Assert.IsTrue( result[ 3 ] == 400 );
-        //    Assert.IsTrue( result[ 4 ] == 500 );
-        //}
+            Assert.IsTrue( result.Length == 5 );
+            Assert.IsTrue( result[ 0 ] == 100 );
+            Assert.IsTrue( result[ 1 ] == 200 );
+            Assert.IsTrue( result[ 2 ] == 300 );
+            Assert.IsTrue( result[ 3 ] == 400 );
+            Assert.IsTrue( result[ 4 ] == 500 );
+        }
+
+        [TestMethod]
+        public void Example1MultiDimensionalArrayPrimitiveType()
+        {
+            string inputJson = "[ [100,101], [200,201], [300,301], [400,301], [500,501] ]";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<int[][]>( inputJson );
+
+            Assert.IsTrue( result.Length == 5 );
+            Assert.IsTrue( result[ 0 ][ 0 ] == 100 );
+            Assert.IsTrue( result[ 0 ][ 1 ] == 101 );
+            Assert.IsTrue( result[ 1 ][ 0 ] == 200 );
+            Assert.IsTrue( result[ 1 ][ 1 ] == 201 );
+            Assert.IsTrue( result[ 2 ][ 0 ] == 300 );
+            Assert.IsTrue( result[ 2 ][ 1 ] == 301 );
+            Assert.IsTrue( result[ 3 ][ 0 ] == 400 );
+            Assert.IsTrue( result[ 3 ][ 1 ] == 401 );
+            Assert.IsTrue( result[ 4 ][ 0 ] == 500 );
+            Assert.IsTrue( result[ 4 ][ 1 ] == 501 );
+        }
 
         [TestMethod]
         public void Example1ListPrimitiveType()

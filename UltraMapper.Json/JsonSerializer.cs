@@ -138,16 +138,37 @@ namespace UltraMapper.Json
             Parser = parser;
         }
 
-        public T Deserialize<T>( string str ) where T : class, new()
-        {
-            return this.Deserialize( str, new T() );
-        }
+        //public T Deserialize<T>( string str ) where T : class, new()
+        //{
+        //    var parsedJson = this.Parser.Parse( str );
+        //    return this.DeserializeInternal( parsedJson, new T() );
+        //}
 
-        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        public T Deserialize<T>( string str, T instance ) where T : class
+        public T Deserialize<T>( string str )
         {
             var parsedContent = this.Parser.Parse( str );
 
+            T instance;
+
+            if( typeof( T ).IsArray )
+            {
+                var arrayLength = ((ArrayParam)parsedContent).Items.Count;
+                instance = InstanceFactory.CreateObject<int,T>( arrayLength );
+            }
+            else instance = InstanceFactory.CreateObject<T>();
+
+            return this.DeserializeInternal( parsedContent, instance );
+        }
+
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+        public T Deserialize<T>( string str, T instance )
+        {
+            var parsedJson = this.Parser.Parse( str );
+            return DeserializeInternal( parsedJson, instance );
+        }
+
+        private T DeserializeInternal<T>( IParsedParam parsedJson, T instance )
+        {
             if( lastMapType != typeof( T ) )
             {
                 lastMapType = typeof( T );
@@ -158,7 +179,7 @@ namespace UltraMapper.Json
                     _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
-            _map( null, parsedContent, instance );
+            _map( null, parsedJson, instance );
             return instance;
         }
 

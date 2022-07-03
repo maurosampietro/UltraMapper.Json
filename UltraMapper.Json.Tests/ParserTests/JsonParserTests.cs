@@ -231,6 +231,48 @@ namespace UltraMapper.Json.Tests.ParserTests
         }
 
         [TestMethod]
+        public void MultiDimensionalArray()
+        {
+            var json = @"
+            {
+                ""name"" : ""blogger"",
+                ""users"" : 
+                [
+                    [""admins"", ""1"", ""2"" , ""3""],
+		            [""editors"", ""4"", ""5"" , ""6""],
+	            ]
+            }";
+
+            json = Mangle( json );
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( json );
+
+            Assert.IsTrue( result.SubParams.Count == 2 );
+
+            Assert.IsTrue( result.SubParams[ 0 ].Name == "name" );
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Value == "blogger" );
+
+            var userArray = (ArrayParam)result.SubParams[ 1 ];
+            Assert.IsTrue( result.SubParams[ 1 ].Name == "users" );
+            Assert.IsTrue( userArray.Items.Count == 2 );
+
+            var subArray1 = (ArrayParam) userArray[0];
+            Assert.IsTrue( subArray1.Items.Count == 4 );
+            Assert.IsTrue( ((SimpleParam)subArray1[ 0 ]).Value == "admins" );
+            Assert.IsTrue( ((SimpleParam)subArray1[ 1 ]).Value == "1" );
+            Assert.IsTrue( ((SimpleParam)subArray1[ 2 ]).Value == "2" );
+            Assert.IsTrue( ((SimpleParam)subArray1[ 3 ]).Value == "3" );
+            
+            var subArray2 = (ArrayParam)userArray[ 1 ];
+            Assert.IsTrue( subArray2.Items.Count == 4 );
+            Assert.IsTrue( ((SimpleParam)subArray2[ 0 ]).Value == "editors" );
+            Assert.IsTrue( ((SimpleParam)subArray2[ 1 ]).Value == "4" );
+            Assert.IsTrue( ((SimpleParam)subArray2[ 2 ]).Value == "5" );
+            Assert.IsTrue( ((SimpleParam)subArray2[ 3 ]).Value == "6" );
+        }
+
+        [TestMethod]
         public void Example2ArrayOfComplexObjects()
         {
             string json = @"
