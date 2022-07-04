@@ -40,7 +40,7 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
@@ -74,7 +74,7 @@ namespace UltraMapper.Json
         public T Deserialize( string str, T instance )
         {
             var parsedContent = this.Parser.Parse( str );
-            _desMap( null, parsedContent, instance );
+            _desMap( _referenceTracker, parsedContent, instance );
             return instance;
         }
 
@@ -116,7 +116,7 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
@@ -179,7 +179,7 @@ namespace UltraMapper.Json
                     _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
-            _map( null, parsedJson, instance );
+            _map( _referenceTracker, parsedJson, instance );
             return instance;
         }
 
