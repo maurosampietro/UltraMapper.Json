@@ -74,7 +74,7 @@ namespace UltraMapper.Json
         public T Deserialize( string str, T instance )
         {
             var parsedContent = this.Parser.Parse( str );
-            _desMap( null, parsedContent, instance );
+            _desMap( _referenceTracker, parsedContent, instance );
             return instance;
         }
 
@@ -181,7 +181,7 @@ namespace UltraMapper.Json
                     _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
-            _map( null, parsedJson, instance );
+            _map( _referenceTracker, parsedJson, instance );
             return instance;
         }
 
