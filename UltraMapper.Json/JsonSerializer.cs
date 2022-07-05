@@ -132,8 +132,6 @@ namespace UltraMapper.Json
                 s => DateTime.Parse( s, Culture ) );
         }
 
-
-
         public JsonSerializer( IParser parser )
             : this()
         {
