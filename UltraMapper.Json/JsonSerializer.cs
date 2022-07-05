@@ -40,7 +40,7 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
@@ -116,7 +116,7 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
                 new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndexAtRuntime = false },
+                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
                 new SimpleParamExpressionBuilder( cfg ),
                 new ObjectToJsonMapper( cfg ),
                 new EnumerableToJsonMapper( cfg )
@@ -131,6 +131,8 @@ namespace UltraMapper.Json
             Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
         }
+
+
 
         public JsonSerializer( IParser parser )
             : this()
