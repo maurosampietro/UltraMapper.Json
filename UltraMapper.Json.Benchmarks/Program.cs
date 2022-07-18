@@ -8,7 +8,7 @@ namespace UltraMapper.Json.Benchmarks
     {
         static void Main( string[] args )
         {
-            var summary = BenchmarkRunner.Run<JsonParsersSimpleObjectReadBenchmark>( new DebugInProcessConfig() );
+            var summary = BenchmarkRunner.Run<JsonParsersComplexObjectBenchmark>( new DebugInProcessConfig() );
 
             Console.ReadLine();
         }

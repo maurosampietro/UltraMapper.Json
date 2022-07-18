@@ -22,15 +22,21 @@ namespace UltraMapper.Json.UltraMapper.Extensions
         public ObjectToJsonMapper( Configuration mappingConfiguration )
             : base( mappingConfiguration ) { }
 
-        public override bool CanHandle( Type source, Type target )
+        public override bool CanHandle( Mapping mapping )
         {
-            return !source.IsEnumerable() && target == typeof( JsonString );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            return !source.EntryType.IsEnumerable() && target.EntryType == typeof( JsonString );
         }
 
-        public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+        public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var context = this.GetMapperContext( source, target, options );
-            var sourceMembers = this.SelectSourceMembers( source ).OfType<PropertyInfo>().ToArray();
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            var context = this.GetMapperContext( mapping );
+            var sourceMembers = this.SelectSourceMembers( source.EntryType ).OfType<PropertyInfo>().ToArray();
 
             var indentationParam = Expression.PropertyOrField( context.TargetInstance, nameof( JsonString.Indentation ) );
 
@@ -38,6 +44,10 @@ namespace UltraMapper.Json.UltraMapper.Extensions
 
             var expression = Expression.Block
             (
+                new[] { context.Mapper },
+
+                Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
+
                 Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "{" + Environment.NewLine ) ),
                 Expression.PostIncrementAssign( indentationParam ),
                 Expression.Block( expressions ),
@@ -122,6 +132,8 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 }
                 else
                 {
+                    var trackedReference = Expression.Parameter( typeof( JsonString ), "trackedReference" );
+
                     var memberAccess = Expression.Property( context.SourceInstance, item );
                     var memberAccessParam = Expression.Parameter( item.PropertyType, "ma" );
 
@@ -129,15 +141,15 @@ namespace UltraMapper.Json.UltraMapper.Extensions
 
                     yield return Expression.Block
                     (
-                        new[] { memberAccessParam },
+                        new[] { memberAccessParam, trackedReference },
 
-                        Expression.Assign(memberAccessParam, memberAccess ),
+                        Expression.Assign( memberAccessParam, memberAccess ),
 
                         ReferenceTrackingExpression.GetMappingExpression(
                             context.ReferenceTracker, memberAccessParam,
                             context.TargetInstance, Expression.Empty(),
                             context.Mapper, _mapper,
-                            Expression.Constant( null, typeof( IMapping ) ) )
+                            Expression.Constant( null, typeof( IMapping ) ) ).ReplaceParameter(trackedReference,"trackedReference")
                     );
 
                     if( i != targetMembers.Length - 1 )

@@ -14,14 +14,20 @@ namespace UltraMapper.Json.UltraMapper.Extensions
         public EnumerableToJsonMapper( Configuration mappingConfiguration )
             : base( mappingConfiguration ) { }
 
-        public override bool CanHandle( Type source, Type target )
+        public override bool CanHandle( Mapping mapping )
         {
-            return !source.IsBuiltIn( true ) && source.IsEnumerable() && target == typeof( JsonString );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            return !source.EntryType.IsBuiltIn( true ) && source.EntryType.IsEnumerable() && target.EntryType == typeof( JsonString );
         }
 
-        public override LambdaExpression GetMappingExpression( Type source, Type target, IMappingOptions options )
+        public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var context = (CollectionMapperContext)this.GetMapperContext( source, target, options );
+            var source = mapping.Source;
+            var target = mapping.Target;
+
+            var context = (CollectionMapperContext)this.GetMapperContext( mapping );
             var mappingExpression = MapperConfiguration[ context.SourceCollectionElementType, typeof( JsonString ) ].MappingExpression;
 
             var body = ExpressionLoops.ForEach( context.SourceInstance, context.SourceCollectionLoopingVar,
