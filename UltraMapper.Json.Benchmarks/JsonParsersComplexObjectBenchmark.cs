@@ -31,26 +31,26 @@ namespace UltraMapper.Json.Benchmarks
         }
 
         static string json = @"
+		{
+			""id"": ""0003"",
+			""ppu"": ""0.55"",
+					
+			""batters"":
 			{
-				""id"": ""0003"",
-				""ppu"": ""0.55"",
-					
-				""batters"":
-				{
-					""batter"":
-					[
-						{ ""id"": ""1001"", ""type"": ""Regular"" },
-						{ ""id"": ""1002"", ""type"": ""Chocolate"" }
-					]
-				},
-					
-				""toppings"":
+				""batter"":
 				[
-					{ ""id"": ""5001"", ""type"": ""None"" },
-					{ ""id"": ""5002"", ""type"": ""Glazed"" }
+					{ ""id"": ""1001"", ""type"": ""Regular"" },
+					{ ""id"": ""1002"", ""type"": ""Chocolate"" }
 				]
-			}
-			";
+			},
+					
+			""toppings"":
+			[
+				{ ""id"": ""5001"", ""type"": ""None"" },
+				{ ""id"": ""5002"", ""type"": ""Glazed"" }
+			]
+		}
+		";
 
         private static readonly JsonSerializer<Item> jsonParser = new JsonSerializer<Item>();
 
