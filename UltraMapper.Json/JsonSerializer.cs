@@ -39,11 +39,11 @@ namespace UltraMapper.Json
 
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
-                new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
-                new SimpleParamExpressionBuilder( cfg ),
-                new ObjectToJsonMapper( cfg ),
-                new EnumerableToJsonMapper( cfg )
+                new ArrayParamExpressionBuilder(),
+                new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
+                new SimpleParamExpressionBuilder(),
+                new ObjectToJsonMapper(),
+                new EnumerableToJsonMapper()
             } );
         } );
 
@@ -115,11 +115,11 @@ namespace UltraMapper.Json
 
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
-                new ArrayParamExpressionBuilder( cfg ),
-                new ComplexParamExpressionBuilder( cfg ){ CanMapByIndex = false },
-                new SimpleParamExpressionBuilder( cfg ),
-                new ObjectToJsonMapper( cfg ),
-                new EnumerableToJsonMapper( cfg )
+                new ArrayParamExpressionBuilder(),
+                new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
+                new SimpleParamExpressionBuilder(),
+                new ObjectToJsonMapper(),
+                new EnumerableToJsonMapper()
             } );
         } );
 
