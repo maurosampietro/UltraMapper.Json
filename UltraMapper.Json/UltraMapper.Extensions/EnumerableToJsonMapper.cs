@@ -16,14 +16,13 @@ namespace UltraMapper.Json.UltraMapper.Extensions
             var source = mapping.Source;
             var target = mapping.Target;
 
-            return !source.EntryType.IsBuiltIn( true ) && source.EntryType.IsEnumerable() && target.EntryType == typeof( JsonString );
+            return !source.EntryType.IsBuiltIn( true ) && 
+                source.EntryType.IsEnumerable() && 
+                target.EntryType == typeof( JsonString );
         }
 
         public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var source = mapping.Source;
-            var target = mapping.Target;
-
             var context = (CollectionMapperContext)this.GetMapperContext( mapping );
             var mappingExpression = context.MapperConfiguration[ context.SourceCollectionElementType, typeof( JsonString ) ].MappingExpression;
 
