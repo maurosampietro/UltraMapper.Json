@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Text;
 using UltraMapper.Json.Tests.ParserTests.Internals;
 
 namespace UltraMapper.Json.Tests.ParserTests.JsonManglers

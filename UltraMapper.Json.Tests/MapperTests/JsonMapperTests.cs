@@ -466,7 +466,6 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( tItem1.type == "Glazed" );
         }
 
-
         [TestMethod]
         public void SetParamToNullComplexParam()
         {
@@ -604,6 +603,34 @@ namespace UltraMapper.Json.Tests.MapperTests
 
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Name == "value" );
             Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Value == "null" );
+        }
+
+        private class BoolTests
+        {
+            public bool isParam1Set { get; set; }
+            public bool isParam2Set { get; set; }
+            public string quotedTrue { get; set; }
+            public string quotedFalse { get; set; }
+        }
+
+        [TestMethod]
+        public void SetParamToBool()
+        {
+            string json = @"
+			{
+				isParam1Set: true,
+				isParam2Set: false,
+	            quotedTrue: ""true"",
+				quotedFalse: ""false"",
+			}";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<BoolTests>( json );
+
+            Assert.IsTrue( result.isParam1Set == true );
+            Assert.IsTrue( result.isParam2Set == false );
+            Assert.IsTrue( result.quotedTrue == "true" );
+            Assert.IsTrue( result.quotedFalse == "false" );
         }
     }
 }

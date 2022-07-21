@@ -80,4 +80,18 @@ namespace UltraMapper.Json.Tests.ParserTests
         {
         }
     }
+
+    /// <summary>
+    /// Let's test how relaxed we are with commas.
+    /// JSON specs do not tolerate the absence of commas.
+    /// </summary>
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class RemoveCommasTests : JsonParserTests
+    {
+        public RemoveCommasTests()
+            : base( new RemoveUnquotedCommasMangler() )
+        {
+        }
+    }    
 }

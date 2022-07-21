@@ -257,13 +257,13 @@ namespace UltraMapper.Json.Tests.ParserTests
             Assert.IsTrue( result.SubParams[ 1 ].Name == "users" );
             Assert.IsTrue( userArray.Items.Count == 2 );
 
-            var subArray1 = (ArrayParam) userArray[0];
+            var subArray1 = (ArrayParam)userArray[ 0 ];
             Assert.IsTrue( subArray1.Items.Count == 4 );
             Assert.IsTrue( ((SimpleParam)subArray1[ 0 ]).Value == "admins" );
             Assert.IsTrue( ((SimpleParam)subArray1[ 1 ]).Value == "1" );
             Assert.IsTrue( ((SimpleParam)subArray1[ 2 ]).Value == "2" );
             Assert.IsTrue( ((SimpleParam)subArray1[ 3 ]).Value == "3" );
-            
+
             var subArray2 = (ArrayParam)userArray[ 1 ];
             Assert.IsTrue( subArray2.Items.Count == 4 );
             Assert.IsTrue( ((SimpleParam)subArray2[ 0 ]).Value == "editors" );
@@ -539,6 +539,35 @@ namespace UltraMapper.Json.Tests.ParserTests
 
             Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Name == "type" );
             Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Value == "Glazed" );
+        }
+
+        [TestMethod]
+        public void SetBoolLiterally()
+        {
+            string json = @"
+			{
+				isParam1Set: true,
+				isParam2Set: false,
+	            quotedTrue: ""true"",
+				quotedFalse: ""false""
+			}";
+
+            json = Mangle( json );
+
+            var parser = new JsonParser();
+            var result = (ComplexParam)parser.Parse( json );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Name == "isParam1Set" );
+            Assert.IsTrue( ((BooleanParam)result.SubParams[ 0 ]).BoolValue == true );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Name == "isParam2Set" );
+            Assert.IsTrue( ((BooleanParam)result.SubParams[ 1 ]).BoolValue == false );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 2 ]).Name == "quotedTrue" );
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 2 ]).Value == "true" );
+
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 3 ]).Name == "quotedFalse" );
+            Assert.IsTrue( ((SimpleParam)result.SubParams[ 3 ]).Value == "false" );
         }
 
         [TestMethod]

@@ -88,6 +88,7 @@ namespace UltraMapper.Json
 
                     default:
                     {
+
                         if( isParsingParamName )
                         {
                             paramName = ParseName( text, ref i );
@@ -96,20 +97,28 @@ namespace UltraMapper.Json
                         }
                         else
                         {
-                            string value = String.Empty;
+                            var sp = new SimpleParam() { Name = paramName };
+
                             if( text[ i ] == QUOTE_SYMBOL )
                             {
                                 i++;
-                                value = ParseQuotation( text, ref i );
+                                sp.Value = ParseQuotation( text, ref i );
                             }
                             else
                             {
+                                var value = ParseValue( text, ref i );
 
-                                value = ParseValue( text, ref i );
-                                if( value == "null" ) value = null;
+                                if( value.Equals( "null", StringComparison.InvariantCultureIgnoreCase ) )
+                                    sp.Value = null;
+                                else if( value.Equals( "false", StringComparison.InvariantCultureIgnoreCase ) )
+                                    sp = new BooleanParam() { Name = paramName, Value = value };
+                                else if( value.Equals( "true", StringComparison.InvariantCultureIgnoreCase ) )
+                                    sp = new BooleanParam() { Name = paramName, Value = value };
+                                else
+                                    sp.Value = value;
                             }
 
-                            cp.SubParams.Add( new SimpleParam() { Name = paramName, Value = value } );
+                            cp.SubParams.Add( sp );
 
                             isParsingParamName = true;
                             break;
