@@ -186,26 +186,29 @@ namespace UltraMapper.Json
 
                     default:
                     {
-                        string value = String.Empty;
+                        var sp = new SimpleParam();
+
                         if( text[ i ] == QUOTE_SYMBOL )
                         {
                             i++;
-                            value = ParseQuotation( text, ref i );
+                            sp.Value = ParseQuotation( text, ref i );
                         }
                         else
                         {
+                            var value = ParseValue( text, ref i );
 
-                            value = ParseValue( text, ref i );
-                            if( value == "null" ) value = null;
+                            if( value.Equals( "null", StringComparison.InvariantCultureIgnoreCase ) )
+                                sp.Value = null;
+                            else if( value.Equals( "false", StringComparison.InvariantCultureIgnoreCase ) )
+                                sp = new BooleanParam() { Value = value };
+                            else if( value.Equals( "true", StringComparison.InvariantCultureIgnoreCase ) )
+                                sp = new BooleanParam() { Value = value };
+                            else
+                                sp.Value = value;
                         }
 
-                        items.Add( new SimpleParam()
-                        {
-                            Value = value
-                        } );
-
+                        items.Add( sp );
                         i--;
-
                         break;
                     }
                 }

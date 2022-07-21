@@ -632,5 +632,41 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( result.quotedTrue == "true" );
             Assert.IsTrue( result.quotedFalse == "false" );
         }
+
+        [TestMethod]
+        public void SetParamArrayToBool1()
+        {
+            string json = @"[true, false, true, false]";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<bool[]>( json );
+
+            Assert.IsTrue( result[ 0 ] == true );
+            Assert.IsTrue( result[ 1 ] == false );
+            Assert.IsTrue( result[ 2 ] == true );
+            Assert.IsTrue( result[ 3 ] == false );
+        }
+
+        private class BoolArrayTests
+        {
+            public bool[] boolArray;
+        }
+
+        [TestMethod]
+        public void SetParamArrayToBool2()
+        {
+            string json = @"
+			{
+				boolArray: [true, false, true, false]
+			}";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<BoolArrayTests>( json );
+
+            Assert.IsTrue( result.boolArray[ 0 ] == true );
+            Assert.IsTrue( result.boolArray[ 1 ] == false );
+            Assert.IsTrue( result.boolArray[ 2 ] == true );
+            Assert.IsTrue( result.boolArray[ 3 ] == false );
+        }
     }
 }
