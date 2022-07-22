@@ -19,9 +19,6 @@ namespace UltraMapper.Json.UltraMapper.Extensions
             IgnoreNonPublicMembers = true,
         };
 
-        public ObjectToJsonMapper( Configuration mappingConfiguration )
-            : base( mappingConfiguration ) { }
-
         public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
@@ -46,7 +43,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
             (
                 new[] { context.Mapper },
 
-                Expression.Assign( context.Mapper, Expression.Constant( _mapper ) ),
+                Expression.Assign( context.Mapper, Expression.Constant( context.MapperInstance ) ),
 
                 Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "{" + Environment.NewLine ) ),
                 Expression.PostIncrementAssign( indentationParam ),
@@ -111,7 +108,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 if( item.PropertyType.IsBuiltIn( true ) )
                 {
                     var memberAccess = Expression.Property( context.SourceInstance, item );
-                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( string ) ].MappingExpression;
+                    LambdaExpression toStringExp = context.MapperConfiguration[ item.PropertyType, typeof( string ) ].MappingExpression;
 
                     yield return Expression.Invoke( _appendMemberNameValue, context.TargetInstance,
                         Expression.Constant( item.Name ),
@@ -121,7 +118,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 {
                     var memberAccess = Expression.Property( context.SourceInstance, item );
 
-                    LambdaExpression toStringExp = MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
+                    LambdaExpression toStringExp = context.MapperConfiguration[ item.PropertyType, typeof( JsonString ) ].MappingExpression;
 
                     yield return Expression.Invoke( _appendMemberName, context.TargetInstance, Expression.Constant( item.Name ) );
                     yield return Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "[" + Environment.NewLine ) );
@@ -148,7 +145,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                         ReferenceTrackingExpression.GetMappingExpression(
                             context.ReferenceTracker, memberAccessParam,
                             context.TargetInstance, Expression.Empty(),
-                            context.Mapper, _mapper,
+                            context.Mapper, context.MapperInstance,
                             Expression.Constant( null, typeof( IMapping ) ) ).ReplaceParameter(trackedReference,"trackedReference")
                     );
 

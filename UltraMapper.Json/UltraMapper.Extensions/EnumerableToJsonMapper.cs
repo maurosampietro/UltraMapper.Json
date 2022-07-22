@@ -11,24 +11,20 @@ namespace UltraMapper.Json.UltraMapper.Extensions
 {
     internal class EnumerableToJsonMapper : CollectionMapper
     {
-        public EnumerableToJsonMapper( Configuration mappingConfiguration )
-            : base( mappingConfiguration ) { }
-
         public override bool CanHandle( Mapping mapping )
         {
             var source = mapping.Source;
             var target = mapping.Target;
 
-            return !source.EntryType.IsBuiltIn( true ) && source.EntryType.IsEnumerable() && target.EntryType == typeof( JsonString );
+            return !source.EntryType.IsBuiltIn( true ) && 
+                source.EntryType.IsEnumerable() && 
+                target.EntryType == typeof( JsonString );
         }
 
         public override LambdaExpression GetMappingExpression( Mapping mapping )
         {
-            var source = mapping.Source;
-            var target = mapping.Target;
-
             var context = (CollectionMapperContext)this.GetMapperContext( mapping );
-            var mappingExpression = MapperConfiguration[ context.SourceCollectionElementType, typeof( JsonString ) ].MappingExpression;
+            var mappingExpression = context.MapperConfiguration[ context.SourceCollectionElementType, typeof( JsonString ) ].MappingExpression;
 
             var body = ExpressionLoops.ForEach( context.SourceInstance, context.SourceCollectionLoopingVar,
                 Expression.Invoke( mappingExpression, context.ReferenceTracker,
