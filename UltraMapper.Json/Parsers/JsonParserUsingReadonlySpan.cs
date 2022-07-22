@@ -18,6 +18,13 @@ namespace UltraMapper.Json
         private const char QUOTE_SYMBOL = '"';
         private const char ESCAPE_SYMBOL = '\\';
 
+        private const string NULL = "null";
+        private const string FALSE = "false";
+        private const string TRUE = "true";
+        
+        private const StringComparison _compareMode = 
+            StringComparison.InvariantCultureIgnoreCase;
+
         public IParsedParam Parse( string text )
         {
             int i = 0;
@@ -109,11 +116,11 @@ namespace UltraMapper.Json
                             {
                                 var value = ParseValue( text, ref i );
 
-                                if( value.Equals( "null", StringComparison.InvariantCultureIgnoreCase ) )
+                                if( value.Equals( NULL, _compareMode ) )
                                     sp.Value = null;
-                                else if( value.Equals( "false", StringComparison.InvariantCultureIgnoreCase ) )
+                                else if( value.Equals( FALSE, _compareMode ) )
                                     sp = new BooleanParam() { Name = paramName, Value = value };
-                                else if( value.Equals( "true", StringComparison.InvariantCultureIgnoreCase ) )
+                                else if( value.Equals( TRUE, _compareMode ) )
                                     sp = new BooleanParam() { Name = paramName, Value = value };
                                 else
                                     sp.Value = value;
@@ -197,11 +204,11 @@ namespace UltraMapper.Json
                         {
                             var value = ParseValue( text, ref i );
 
-                            if( value.Equals( "null", StringComparison.InvariantCultureIgnoreCase ) )
+                            if( value.Equals( NULL, _compareMode ) )
                                 sp.Value = null;
-                            else if( value.Equals( "false", StringComparison.InvariantCultureIgnoreCase ) )
+                            else if( value.Equals( FALSE, _compareMode ) )
                                 sp = new BooleanParam() { Value = value };
-                            else if( value.Equals( "true", StringComparison.InvariantCultureIgnoreCase ) )
+                            else if( value.Equals( TRUE, _compareMode ) )
                                 sp = new BooleanParam() { Value = value };
                             else
                                 sp.Value = value;
