@@ -93,5 +93,25 @@ namespace UltraMapper.Json.Tests.ParserTests
             : base( new RemoveUnquotedCommasMangler() )
         {
         }
-    }    
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class ParamNameUpperCaseTests : JsonParserTests
+    {
+        public ParamNameUpperCaseTests()
+            : base( new ParamNameCaseMangler( ParamNameCaseMangler.Cases.UPPER ) )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
+    public class ParamNameLowerCaseTests : JsonParserTests
+    {
+        public ParamNameLowerCaseTests()
+            : base( new ParamNameCaseMangler( ParamNameCaseMangler.Cases.LOWER ) )
+        {
+        }
+    }
 }
