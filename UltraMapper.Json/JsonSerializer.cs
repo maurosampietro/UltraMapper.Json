@@ -55,6 +55,8 @@ namespace UltraMapper.Json
             Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
 
+            Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
+
             _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
         }
@@ -130,6 +132,8 @@ namespace UltraMapper.Json
         {
             Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
+
+            Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
         }
 
         public JsonSerializer( IParser parser )
@@ -153,7 +157,7 @@ namespace UltraMapper.Json
             if( typeof( T ).IsArray )
             {
                 var arrayLength = ((ArrayParam)parsedContent).Items.Count;
-                instance = InstanceFactory.CreateObject<int,T>( arrayLength );
+                instance = InstanceFactory.CreateObject<int, T>( arrayLength );
             }
             else instance = InstanceFactory.CreateObject<T>();
 

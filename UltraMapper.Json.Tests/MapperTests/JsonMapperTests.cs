@@ -25,7 +25,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetSimpleParamArrayItemToNull()
+        public void SetSimpleParamArrayItemToNullLeadsToDefaultValue()
         {
             string inputJson = "[ null, 100, 200 ]";
 
@@ -33,9 +33,23 @@ namespace UltraMapper.Json.Tests.MapperTests
             var result = parser.Deserialize<int[]>( inputJson );
 
             Assert.IsTrue( result.Length == 3 );
+            Assert.IsTrue( result[ 0 ] == 0 ); //defaults to 0
+            Assert.IsTrue( result[ 1 ] == 100 );
+            Assert.IsTrue( result[ 2 ] == 200 );
+        }
+
+        [TestMethod]
+        public void SetSimpleParamToNullableArrayItemToNull()
+        {
+            string inputJson = "[ null, 100, 200 ]";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<int?[]>( inputJson );
+
+            Assert.IsTrue( result.Length == 3 );
             Assert.IsTrue( result[ 0 ] == null );
-            Assert.IsTrue( result[ 1 ] == 200 );
-            Assert.IsTrue( result[ 2 ] == 300 );
+            Assert.IsTrue( result[ 1 ] == 100 );
+            Assert.IsTrue( result[ 2 ] == 200 );
         }
 
         [TestMethod]
@@ -649,7 +663,7 @@ namespace UltraMapper.Json.Tests.MapperTests
 
         private class BoolArrayTests
         {
-            public bool[] boolArray;
+            public bool[] boolArray { get; set; }
         }
 
         [TestMethod]
