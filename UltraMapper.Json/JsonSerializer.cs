@@ -41,9 +41,13 @@ namespace UltraMapper.Json
             {
                 new ArrayParamExpressionBuilder(),
                 new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
-                new SimpleParamExpressionBuilder(),
                 new ObjectToJsonMapper(),
                 new EnumerableToJsonMapper()
+            } );
+
+            cfg.Mappers.AddBefore<NullableMapper>( new IMappingExpressionBuilder[]
+            {
+                new SimpleParamExpressionBuilder(),
             } );
         } );
 
@@ -119,9 +123,13 @@ namespace UltraMapper.Json
             {
                 new ArrayParamExpressionBuilder(),
                 new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
-                new SimpleParamExpressionBuilder(),
                 new ObjectToJsonMapper(),
                 new EnumerableToJsonMapper()
+            } );
+
+            cfg.Mappers.AddBefore<NullableMapper>( new IMappingExpressionBuilder[] 
+            {
+                new SimpleParamExpressionBuilder(),
             } );
         } );
 
@@ -134,6 +142,7 @@ namespace UltraMapper.Json
                 s => DateTime.Parse( s, Culture ) );
 
             Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
+            Mapper.Config.MapTypes<SimpleParam, string>( s => s.Value );
         }
 
         public JsonSerializer( IParser parser )
