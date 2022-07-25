@@ -10,5 +10,4 @@ Every parser performs two basic tasks: the actual text analysis and a mapping st
 
 UltraMapper and UltraMapper.Parsing allows you to completely separate the two steps leading to clear and straightforward code. You are only in charge of implementing the text-analysis part
 
-**Even though much more than just basic funcionality has already been implemented; this repository is still considered a beta.**    
-**While in beta, Nuget packages and builds won't be available.**
+**Even though much more than just basic funcionality has already been implemented; UltrMapper.Json won't be officially released until UltraMapper major refactor will be completed. While in beta, Nuget packages and builds won't be available.**
