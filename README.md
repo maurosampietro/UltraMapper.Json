@@ -2,7 +2,7 @@
 
 UltraMapper.Json is a full-fledged json parser.
 
-#About UltraMapper-based parsers
+# About UltraMapper-based parsers
 
 UltraMapper makes it easy to write a performant, full-fledged parser of any kind, from scratch and in little time.
 
