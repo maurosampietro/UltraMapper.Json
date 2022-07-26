@@ -524,15 +524,8 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( result.id == "0001" );
             Assert.IsTrue( result.ppu == "0.55" );
 
-            Assert.IsTrue( result.batters.batter.Count == 2 );
-            Assert.IsTrue( result.batters.batter[ 0 ] == null );
-            Assert.IsTrue( result.batters.batter[ 1 ].id == "1002" );
-            Assert.IsTrue( result.batters.batter[ 1 ].type == "Chocolate" );
-
-            Assert.IsTrue( result.toppings.Length == 2 );
-            Assert.IsTrue( result.toppings[ 0 ] == null );
-            Assert.IsTrue( result.toppings[ 1 ].id == "5002" );
-            Assert.IsTrue( result.toppings[ 1 ].type == "Glazed" );
+            Assert.IsTrue( result.batters.batter == null );
+            Assert.IsTrue( result.toppings == null );
         }   
 
         [TestMethod]
