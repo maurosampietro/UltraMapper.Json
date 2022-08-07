@@ -1,15 +1,39 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using UltraMapper.Parsing;
 
 namespace UltraMapper.Json.Tests.MapperTests
 {
-    [TestCategory( "Mapper tests" )]
+    [TestCategory( "Mapper deserializing tests" )]
     [TestClass]
     public class JsonMapperTests
     {
         [TestMethod]
-        public void Example1ArrayPrimitiveType()
+        public void EmptyArray()
+        {
+            string inputJson = "[]";
+
+            var parser = new JsonSerializer();
+            var result = parser.Deserialize<int[]>( inputJson );
+
+            Assert.IsTrue( result.Length == 0 );
+        }
+
+        [TestMethod]
+        public void EmptyArrayOnNonCollection()
+        {
+            string inputJson = "[]";
+
+            var parser = new JsonSerializer();
+            
+            //should throw some specific exception: cannot deserialize array on non-collection
+            Assert.ThrowsException<Exception>( 
+                () => parser.Deserialize<object>( inputJson ) );
+        }
+
+        [TestMethod]
+        public void ArrayPrimitiveType()
         {
             string inputJson = "[ 100, 200, 300, 400, 500 ]";
 
@@ -25,8 +49,10 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetSimpleParamArrayItemToNullLeadsToDefaultValue()
+        public void ArrayPrimitiveTypeNullItemToNonNullableArray()
         {
+            //We expected the default value because we deserialize to non-nullable int[]
+
             string inputJson = "[ null, 100, 200 ]";
 
             var parser = new JsonSerializer();
@@ -39,8 +65,10 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetSimpleParamToNullableArrayItemToNull()
+        public void ArrayPrimitiveTypeNullItemToNullableArray()
         {
+            //We expect null because we deserialize to nullable int?[]
+
             string inputJson = "[ null, 100, 200 ]";
 
             var parser = new JsonSerializer();
@@ -53,60 +81,50 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void Example1MultiDimensionalArrayPrimitiveType()
+        public void MultiDimensionalArrayPrimitiveType()
         {
-            string inputJson = "[ [100,101], [200,201], [300,301], [400,301], [500,501] ]";
+            string inputJson = "[ [100,101], [200,201], [300,301] ]";
 
             var parser = new JsonSerializer();
             var result = parser.Deserialize<int[][]>( inputJson );
 
-            Assert.IsTrue( result.Length == 5 );
+            Assert.IsTrue( result.Length == 3 );
             Assert.IsTrue( result[ 0 ][ 0 ] == 100 );
             Assert.IsTrue( result[ 0 ][ 1 ] == 101 );
             Assert.IsTrue( result[ 1 ][ 0 ] == 200 );
             Assert.IsTrue( result[ 1 ][ 1 ] == 201 );
             Assert.IsTrue( result[ 2 ][ 0 ] == 300 );
             Assert.IsTrue( result[ 2 ][ 1 ] == 301 );
-            Assert.IsTrue( result[ 3 ][ 0 ] == 400 );
-            Assert.IsTrue( result[ 3 ][ 1 ] == 401 );
-            Assert.IsTrue( result[ 4 ][ 0 ] == 500 );
-            Assert.IsTrue( result[ 4 ][ 1 ] == 501 );
         }
 
         [TestMethod]
-        public void SetToNullExample1MultiDimensionalArrayPrimitiveType()
+        public void MultiDimensionalArrayPrimitiveTypeNullItem()
         {
-            string inputJson = "[ null, [200,201], [300,301], [400,301], [500,501] ]";
+            string inputJson = "[ null, [200,201], [300,301] ]";
 
             var parser = new JsonSerializer();
             var result = parser.Deserialize<int[][]>( inputJson );
 
-            Assert.IsTrue( result.Length == 5 );
+            Assert.IsTrue( result.Length == 3 );
             Assert.IsTrue( result[ 0 ] == null );
             Assert.IsTrue( result[ 1 ][ 0 ] == 200 );
             Assert.IsTrue( result[ 1 ][ 1 ] == 201 );
             Assert.IsTrue( result[ 2 ][ 0 ] == 300 );
             Assert.IsTrue( result[ 2 ][ 1 ] == 301 );
-            Assert.IsTrue( result[ 3 ][ 0 ] == 400 );
-            Assert.IsTrue( result[ 3 ][ 1 ] == 401 );
-            Assert.IsTrue( result[ 4 ][ 0 ] == 500 );
-            Assert.IsTrue( result[ 4 ][ 1 ] == 501 );
         }
 
         [TestMethod]
-        public void Example1ListPrimitiveType()
+        public void ListPrimitiveType()
         {
-            string inputJson = "[ 100, 200, 300, 400, 500 ]";
+            string inputJson = "[ 100, 200, 300 ]";
 
             var parser = new JsonSerializer();
             var result = parser.Deserialize<List<int>>( inputJson );
 
-            Assert.IsTrue( result.Count == 5 );
+            Assert.IsTrue( result.Count == 3 );
             Assert.IsTrue( result[ 0 ] == 100 );
             Assert.IsTrue( result[ 1 ] == 200 );
             Assert.IsTrue( result[ 2 ] == 300 );
-            Assert.IsTrue( result[ 3 ] == 400 );
-            Assert.IsTrue( result[ 4 ] == 500 );
         }
 
         public class ColorValue
@@ -116,7 +134,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void Example2ArrayOfComplexObject()
+        public void ArrayOfComplexObject()
         {
             string inputJson = @"
 		    [
@@ -183,7 +201,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void Example3ObjectWithSubobject()
+        public void ObjectWithSubobject()
         {
             string inputJson = @" 
 			{
@@ -407,7 +425,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         //}
     }
 
-    [TestCategory( "Mapper tests" )]
+    [TestCategory( "Mapper deserializing tests" )]
     [TestClass]
     public class Example4
     {
@@ -431,7 +449,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void Example4HighlyNestedComplexObject()
+        public void HighlyNestedComplexObject()
         {
             string inputJson = @"
 			{
@@ -526,7 +544,7 @@ namespace UltraMapper.Json.Tests.MapperTests
 
             Assert.IsTrue( result.batters.batter == null );
             Assert.IsTrue( result.toppings == null );
-        }   
+        }
 
         [TestMethod]
         public void SetComplexParamArrayItemToNull()

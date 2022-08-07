@@ -51,8 +51,8 @@ namespace UltraMapper.Json
             } );
         } );
 
-        private readonly Action<ReferenceTracker, object, object> _desMap;
-        private readonly Action<ReferenceTracker, object, object> _serMap;
+        private readonly UltraMapperDelegate _desMap;
+        private readonly UltraMapperDelegate _serMap;
 
         public JsonSerializer()
         {
@@ -80,8 +80,7 @@ namespace UltraMapper.Json
         public T Deserialize( string str, T instance )
         {
             var parsedContent = this.Parser.Parse( str );
-            _desMap( _referenceTracker, parsedContent, instance );
-            return instance;
+            return (T)_desMap( _referenceTracker, parsedContent, instance );
         }
 
         public string Serialize( T instance )
@@ -127,14 +126,14 @@ namespace UltraMapper.Json
                 new EnumerableToJsonMapper()
             } );
 
-            cfg.Mappers.AddBefore<NullableMapper>( new IMappingExpressionBuilder[] 
+            cfg.Mappers.AddBefore<NullableMapper>( new IMappingExpressionBuilder[]
             {
                 new SimpleParamExpressionBuilder(),
             } );
         } );
 
         private Type lastMapType = null;
-        private Action<ReferenceTracker, object, object> _map;
+        private UltraMapperDelegate _map;
 
         public JsonSerializer()
         {
@@ -192,8 +191,7 @@ namespace UltraMapper.Json
                     _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             }
 
-            _map( _referenceTracker, parsedJson, instance );
-            return instance;
+            return (T)_map( _referenceTracker, parsedJson, instance );
         }
 
         public string Serialize<T>( T instance )

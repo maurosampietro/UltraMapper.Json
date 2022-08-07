@@ -49,12 +49,13 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                 Expression.PostIncrementAssign( indentationParam ),
                 Expression.Block( expressions ),
                 Expression.PostDecrementAssign( indentationParam ),
-                Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "}" ) )
+                Expression.Invoke( _appendLine, context.TargetInstance, Expression.Constant( "}" ) ),
+
+                context.TargetInstance
             );
 
-            var delegateType = typeof( Action<,,> ).MakeGenericType(
-                 context.ReferenceTracker.Type, context.SourceInstance.Type,
-                 context.TargetInstance.Type );
+            var delegateType = typeof( UltraMapperDelegate<,> )
+                .MakeGenericType( context.SourceInstance.Type, context.TargetInstance.Type );
 
             return Expression.Lambda( delegateType, expression,
                 context.ReferenceTracker, context.SourceInstance, context.TargetInstance );
