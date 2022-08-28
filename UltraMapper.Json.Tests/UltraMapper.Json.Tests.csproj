@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<!--<TargetFrameworks>net452;net46;net47;net50;net60</TargetFrameworks>-->
-    <TargetFrameworks>net46;net60</TargetFrameworks>
+    <TargetFrameworks>net60</TargetFrameworks>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 

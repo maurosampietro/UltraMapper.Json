@@ -431,21 +431,21 @@ namespace UltraMapper.Json.Tests.MapperTests
     {
         public class Item
         {
-            public string id { get; set; }
-            public string ppu { get; set; }
-            public Batters batters { get; set; }
-            public Ingredient[] toppings { get; set; }
+            public string Id { get; set; }
+            public string Ppu { get; set; }
+            public Batters Batters { get; set; }
+            public Ingredient[] Toppings { get; set; }
         }
 
         public class Batters
         {
-            public List<Ingredient> batter { get; set; }
+            public List<Ingredient> Batter { get; set; }
         }
 
         public class Ingredient
         {
-            public string id { get; set; }
-            public string type { get; set; }
+            public string Id { get; set; }
+            public string Type { get; set; }
         }
 
         [TestMethod]
@@ -475,27 +475,27 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<Item>( inputJson );
 
-            Assert.IsTrue( result.id == "0001" );
-            Assert.IsTrue( result.ppu == "0.55" );
+            Assert.IsTrue( result.Id == "0001" );
+            Assert.IsTrue( result.Ppu == "0.55" );
 
-            Assert.IsTrue( result.batters.batter.Count == 2 );
+            Assert.IsTrue( result.Batters.Batter.Count == 2 );
 
-            var bItem0 = result.batters.batter[ 0 ];
-            Assert.IsTrue( bItem0.id == "1001" );
-            Assert.IsTrue( bItem0.type == "Regular" );
+            var bItem0 = result.Batters.Batter[ 0 ];
+            Assert.IsTrue( bItem0.Id == "1001" );
+            Assert.IsTrue( bItem0.Type == "Regular" );
 
-            var bItem1 = result.batters.batter[ 1 ];
-            Assert.IsTrue( bItem1.id == "1002" );
-            Assert.IsTrue( bItem1.type == "Chocolate" );
+            var bItem1 = result.Batters.Batter[ 1 ];
+            Assert.IsTrue( bItem1.Id == "1002" );
+            Assert.IsTrue( bItem1.Type == "Chocolate" );
 
-            Assert.IsTrue( result.toppings.Length == 2 );
-            var tItem0 = result.toppings[ 0 ];
-            Assert.IsTrue( tItem0.id == "5001" );
-            Assert.IsTrue( tItem0.type == "None" );
+            Assert.IsTrue( result.Toppings.Length == 2 );
+            var tItem0 = result.Toppings[ 0 ];
+            Assert.IsTrue( tItem0.Id == "5001" );
+            Assert.IsTrue( tItem0.Type == "None" );
 
-            var tItem1 = result.toppings[ 1 ];
-            Assert.IsTrue( tItem1.id == "5002" );
-            Assert.IsTrue( tItem1.type == "Glazed" );
+            var tItem1 = result.Toppings[ 1 ];
+            Assert.IsTrue( tItem1.Id == "5002" );
+            Assert.IsTrue( tItem1.Type == "Glazed" );
         }
 
         [TestMethod]
@@ -513,11 +513,11 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<Item>( inputJson );
 
-            Assert.IsTrue( result.id == "0001" );
-            Assert.IsTrue( result.ppu == "0.55" );
+            Assert.IsTrue( result.Id == "0001" );
+            Assert.IsTrue( result.Ppu == "0.55" );
 
-            Assert.IsTrue( result.batters == null );
-            Assert.IsTrue( result.toppings == null );
+            Assert.IsTrue( result.Batters == null );
+            Assert.IsTrue( result.Toppings == null );
         }
 
         [TestMethod]
@@ -539,11 +539,11 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<Item>( inputJson );
 
-            Assert.IsTrue( result.id == "0001" );
-            Assert.IsTrue( result.ppu == "0.55" );
+            Assert.IsTrue( result.Id == "0001" );
+            Assert.IsTrue( result.Ppu == "0.55" );
 
-            Assert.IsTrue( result.batters.batter == null );
-            Assert.IsTrue( result.toppings == null );
+            Assert.IsTrue( result.Batters.Batter == null );
+            Assert.IsTrue( result.Toppings == null );
         }
 
         [TestMethod]
@@ -573,18 +573,18 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<Item>( inputJson );
 
-            Assert.IsTrue( result.id == "0001" );
-            Assert.IsTrue( result.ppu == "0.55" );
+            Assert.IsTrue( result.Id == "0001" );
+            Assert.IsTrue( result.Ppu == "0.55" );
 
-            Assert.IsTrue( result.batters.batter.Count == 2 );
-            Assert.IsTrue( result.batters.batter[ 0 ] == null );
-            Assert.IsTrue( result.batters.batter[ 1 ].id == "1002" );
-            Assert.IsTrue( result.batters.batter[ 1 ].type == "Chocolate" );
+            Assert.IsTrue( result.Batters.Batter.Count == 2 );
+            Assert.IsTrue( result.Batters.Batter[ 0 ] == null );
+            Assert.IsTrue( result.Batters.Batter[ 1 ].Id == "1002" );
+            Assert.IsTrue( result.Batters.Batter[ 1 ].Type == "Chocolate" );
 
-            Assert.IsTrue( result.toppings.Length == 2 );
-            Assert.IsTrue( result.toppings[ 0 ] == null );
-            Assert.IsTrue( result.toppings[ 1 ].id == "5002" );
-            Assert.IsTrue( result.toppings[ 1 ].type == "Glazed" );
+            Assert.IsTrue( result.Toppings.Length == 2 );
+            Assert.IsTrue( result.Toppings[ 0 ] == null );
+            Assert.IsTrue( result.Toppings[ 1 ].Id == "5002" );
+            Assert.IsTrue( result.Toppings[ 1 ].Type == "Glazed" );
         }
     }
 
@@ -665,10 +665,10 @@ namespace UltraMapper.Json.Tests.MapperTests
 
         private class BoolTests
         {
-            public bool isParam1Set { get; set; }
-            public bool isParam2Set { get; set; }
-            public string quotedTrue { get; set; }
-            public string quotedFalse { get; set; }
+            public bool IsParam1Set { get; set; }
+            public bool IsParam2Set { get; set; }
+            public string QuotedTrue { get; set; }
+            public string QuotedFalse { get; set; }
         }
 
         [TestMethod]
@@ -685,10 +685,10 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<BoolTests>( json );
 
-            Assert.IsTrue( result.isParam1Set == true );
-            Assert.IsTrue( result.isParam2Set == false );
-            Assert.IsTrue( result.quotedTrue == "true" );
-            Assert.IsTrue( result.quotedFalse == "false" );
+            Assert.IsTrue( result.IsParam1Set == true );
+            Assert.IsTrue( result.IsParam2Set == false );
+            Assert.IsTrue( result.QuotedTrue == "true" );
+            Assert.IsTrue( result.QuotedFalse == "false" );
         }
 
         [TestMethod]
@@ -707,7 +707,7 @@ namespace UltraMapper.Json.Tests.MapperTests
 
         private class BoolArrayTests
         {
-            public bool[] boolArray { get; set; }
+            public bool[] BoolArray { get; set; }
         }
 
         [TestMethod]
@@ -721,10 +721,10 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<BoolArrayTests>( json );
 
-            Assert.IsTrue( result.boolArray[ 0 ] == true );
-            Assert.IsTrue( result.boolArray[ 1 ] == false );
-            Assert.IsTrue( result.boolArray[ 2 ] == true );
-            Assert.IsTrue( result.boolArray[ 3 ] == false );
+            Assert.IsTrue( result.BoolArray[ 0 ] == true );
+            Assert.IsTrue( result.BoolArray[ 1 ] == false );
+            Assert.IsTrue( result.BoolArray[ 2 ] == true );
+            Assert.IsTrue( result.BoolArray[ 3 ] == false );
         }
     }
 }
