@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	  <TargetFrameworks>netstandard20;net47;net50;net60</TargetFrameworks>
+	  <TargetFrameworks>net60</TargetFrameworks>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 

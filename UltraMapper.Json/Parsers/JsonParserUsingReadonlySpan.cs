@@ -21,12 +21,16 @@ namespace UltraMapper.Json
         private const string NULL = "null";
         private const string FALSE = "false";
         private const string TRUE = "true";
-        
-        private const StringComparison _compareMode = 
+
+        private const StringComparison _compareMode =
             StringComparison.InvariantCultureIgnoreCase;
+
+        private string _text;
 
         public IParsedParam Parse( string text )
         {
+            _text = text;
+
             int i = 0;
             while( text[ i ].IsWhiteSpace() )
                 i++;
@@ -114,16 +118,8 @@ namespace UltraMapper.Json
                             }
                             else
                             {
-                                var value = ParseValue( text, ref i );
-
-                                if( value.Equals( NULL, _compareMode ) )
-                                    sp.Value = null;
-                                else if( value.Equals( FALSE, _compareMode ) )
-                                    sp = new BooleanParam() { Name = paramName, Value = value };
-                                else if( value.Equals( TRUE, _compareMode ) )
-                                    sp = new BooleanParam() { Name = paramName, Value = value };
-                                else
-                                    sp.Value = value;
+                                sp = ParseValue( text, ref i );
+                                sp.Name = paramName;
                             }
 
                             cp.SubParams.Add( sp );
@@ -193,7 +189,7 @@ namespace UltraMapper.Json
 
                     default:
                     {
-                        var sp = new SimpleParam();
+                        SimpleParam sp = new SimpleParam();
 
                         if( text[ i ] == QUOTE_SYMBOL )
                         {
@@ -202,16 +198,7 @@ namespace UltraMapper.Json
                         }
                         else
                         {
-                            var value = ParseValue( text, ref i );
-
-                            if( value.Equals( NULL, _compareMode ) )
-                                sp.Value = null;
-                            else if( value.Equals( FALSE, _compareMode ) )
-                                sp = new BooleanParam() { Value = value };
-                            else if( value.Equals( TRUE, _compareMode ) )
-                                sp = new BooleanParam() { Value = value };
-                            else
-                                sp.Value = value;
+                            sp = ParseValue( text, ref i );
                         }
 
                         items.Add( sp );
@@ -266,8 +253,22 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseValue( ReadOnlySpan<char> text, ref int i )
+        private SimpleParam ParseValue( ReadOnlySpan<char> text, ref int i )
         {
+            SimpleParam getReturnValue( ReadOnlySpan<char> value, int startIndex, int i )
+            {
+                if( value.Equals( NULL, _compareMode ) )
+                    return new SimpleParam() { Value = null };
+
+                if( value.Equals( FALSE, _compareMode ) )
+                    return new BooleanParam() { Value = Boolean.FalseString };
+
+                if( value.Equals( TRUE, _compareMode ) )
+                    return new BooleanParam() { Value = Boolean.TrueString };
+
+                return new SimpleParamSlice( _text ) { ValueStartIndex = startIndex, ValueEndIndex = i };
+            };
+       
             int startIndex = i;
 
             for( ; true; i++ )
@@ -277,7 +278,7 @@ namespace UltraMapper.Json
                     case QUOTE_SYMBOL:
                     {
                         i++;
-                        return ParseQuotation( text, ref i );
+                        return new SimpleParam() { Value = ParseQuotation( text, ref i ) };
                     }
 
                     default:
@@ -291,7 +292,7 @@ namespace UltraMapper.Json
                         for( ; i < text.Length; i++ )
                         {
                             if( text[ i ].IsWhiteSpace() )
-                                return text[ startIndex..i ].ToString();
+                                return getReturnValue( text[ startIndex..i ], startIndex, i );
 
                             switch( text[ i ] )
                             {
@@ -299,7 +300,7 @@ namespace UltraMapper.Json
                                 case OBJECT_END_SYMBOL:
                                 case ARRAY_END_SYMBOL:
                                 {
-                                    return text[ startIndex..i ].ToString();
+                                    return getReturnValue( text[ startIndex..i ], startIndex, i );
                                 }
                             }
                         }

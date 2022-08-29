@@ -707,7 +707,7 @@ namespace UltraMapper.Json.Tests.MapperTests
 
         private class BoolArrayTests
         {
-            public bool[] boolArray { get; set; }
+            public bool[] BoolArray { get; set; }
         }
 
         [TestMethod]
@@ -721,10 +721,10 @@ namespace UltraMapper.Json.Tests.MapperTests
             var parser = new JsonSerializer();
             var result = parser.Deserialize<BoolArrayTests>( json );
 
-            Assert.IsTrue( result.boolArray[ 0 ] == true );
-            Assert.IsTrue( result.boolArray[ 1 ] == false );
-            Assert.IsTrue( result.boolArray[ 2 ] == true );
-            Assert.IsTrue( result.boolArray[ 3 ] == false );
+            Assert.IsTrue( result.BoolArray[ 0 ] == true );
+            Assert.IsTrue( result.BoolArray[ 1 ] == false );
+            Assert.IsTrue( result.BoolArray[ 2 ] == true );
+            Assert.IsTrue( result.BoolArray[ 3 ] == false );
         }
     }
 }
