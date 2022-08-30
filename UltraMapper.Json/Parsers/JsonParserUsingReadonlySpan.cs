@@ -268,7 +268,7 @@ namespace UltraMapper.Json
 
                 return new SimpleParamSlice( _text ) { ValueStartIndex = startIndex, ValueEndIndex = i };
             };
-       
+
             int startIndex = i;
 
             for( ; true; i++ )
@@ -355,12 +355,13 @@ namespace UltraMapper.Json
                                 int unicodeCharIndex = quotation.IndexOf( @"\u" );
                                 while( unicodeCharIndex > -1 )
                                 {
-                                    string unicodeLiteral = quotation.Substring( unicodeCharIndex, 6 );
-                                    int code = Int32.Parse( unicodeLiteral[ 2.. ], System.Globalization.NumberStyles.HexNumber );
-                                    string unicodeChar = Char.ConvertFromUtf32( code );
-                                    quotation = quotation.Replace( unicodeLiteral, unicodeChar );
+                                    var unicodeLiteral = quotation.AsSpan().Slice( unicodeCharIndex, 6 );
+                                    int symbolCode = Int32.Parse( unicodeLiteral[ 2.. ], System.Globalization.NumberStyles.HexNumber );
+                                    var unicodeChar = Char.ConvertFromUtf32( symbolCode );
+                                    quotation = quotation.Remove( unicodeCharIndex, 6 )
+                                        .Insert( unicodeCharIndex, unicodeChar );
 
-                                    unicodeCharIndex = quotation.IndexOf( @"\u" );
+                                    unicodeCharIndex = quotation.IndexOf( @"\u", unicodeCharIndex );
                                 }
                             }
                         }
