@@ -92,7 +92,7 @@ namespace UltraMapper.Json
         }
 
         public string Serialize( T instance )
-        {
+        { 
             _jsonString.Json.Clear();
             _referenceTracker.Clear();
 
