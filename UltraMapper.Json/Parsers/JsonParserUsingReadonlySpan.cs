@@ -255,7 +255,7 @@ namespace UltraMapper.Json
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         private SimpleParam ParseValue( ReadOnlySpan<char> text, ref int i )
         {
-            SimpleParam getReturnValue( ReadOnlySpan<char> value, int startIndex, int i )
+            static SimpleParam getReturnValue( ReadOnlySpan<char> value, int startIndex, int i )
             {
                 if( value.Equals( NULL, _compareMode ) )
                     return new SimpleParam() { Value = null };
@@ -266,7 +266,7 @@ namespace UltraMapper.Json
                 if( value.Equals( TRUE, _compareMode ) )
                     return new BooleanParam() { Value = Boolean.TrueString };
 
-                return new SimpleParamSlice( _text ) { ValueStartIndex = startIndex, ValueEndIndex = i };
+                return new SimpleParam(){ Value = value.ToString() };
             };
        
             int startIndex = i;

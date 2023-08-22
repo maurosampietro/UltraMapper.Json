@@ -31,7 +31,7 @@ namespace UltraMapper.Json
 
             cfg.Mappers.AddBefore<ReferenceMapper>( new IMappingExpressionBuilder[]
             {
-                new SimpleParamExpressionBuilder(),
+                //new SimpleParamExpressionBuilder(),
                 new ArrayParamExpressionBuilder(),
                 new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
                 new ObjectToJsonMapper(),
@@ -43,6 +43,7 @@ namespace UltraMapper.Json
                 new SimpleParamExpressionBuilder(),
             } );
         } );
+
         public static Mapper Mapper => _mapper;
     }
 
