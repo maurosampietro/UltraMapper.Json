@@ -26,9 +26,9 @@ namespace UltraMapper.Json.Tests.MapperTests
             string inputJson = "[]";
 
             var parser = new JsonSerializer();
-            
+
             //should throw some specific exception: cannot deserialize array on non-collection
-            Assert.ThrowsException<Exception>( 
+            Assert.ThrowsException<Exception>(
                 () => parser.Deserialize<object>( inputJson ) );
         }
 
@@ -550,19 +550,19 @@ namespace UltraMapper.Json.Tests.MapperTests
         public void SetComplexParamArrayItemToNull()
         {
             string inputJson = @"
-			{
-				""id"": ""0001"",
-				""ppu"": 0.55	,
+			{				
+                ""id"": ""0001"",
+                ""ppu"": 0.55	,
 
-				""batters"":
-				{
-					""batter"":
-					[
-						null,
-						{ ""id"": ""1002"", ""type"": ""Chocolate"" },
-					]
-				},
-				
+                ""batters"":
+                {
+            	    ""batter"":
+            	    [
+            		    null,
+            		    { ""id"": ""1002"", ""type"": ""Chocolate"" },
+            	    ]
+                },
+
 				""toppings"":
 				[
 					{ ""id"": ""5001"", ""type"": ""None"" },
@@ -582,9 +582,9 @@ namespace UltraMapper.Json.Tests.MapperTests
             Assert.IsTrue( result.Batters.Batter[ 1 ].Type == "Chocolate" );
 
             Assert.IsTrue( result.Toppings.Length == 2 );
-            Assert.IsTrue( result.Toppings[ 0 ] == null );
-            Assert.IsTrue( result.Toppings[ 1 ].Id == "5002" );
-            Assert.IsTrue( result.Toppings[ 1 ].Type == "Glazed" );
+            Assert.IsTrue( result.Toppings[ 0 ].Id == "5001" );
+            Assert.IsTrue( result.Toppings[ 0 ].Type == "None" );
+            Assert.IsTrue( result.Toppings[ 1 ] == null );
         }
     }
 
