@@ -146,7 +146,7 @@ namespace UltraMapper.Json.UltraMapper.Extensions
                         ReferenceTrackingExpression.GetMappingExpression(
                             context.ReferenceTracker, memberAccessParam,
                             context.TargetInstance, Expression.Empty(),
-                            context.Mapper, context.MapperInstance,
+                            context.Mapper, context.MapperInstance, null,
                             Expression.Constant( null, typeof( IMapping ) ) ).ReplaceParameter(trackedReference,"trackedReference")
                     );
 

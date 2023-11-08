@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 
 namespace UltraMapper.Json.Benchmarks
@@ -8,7 +9,7 @@ namespace UltraMapper.Json.Benchmarks
     {
         static void Main( string[] args )
         {
-            var summary = BenchmarkRunner.Run<JsonParsersComplexObjectBenchmark>( new DebugInProcessConfig() );
+            var summary = BenchmarkRunner.Run( typeof( Program ).Assembly );
 
             Console.ReadLine();
         }

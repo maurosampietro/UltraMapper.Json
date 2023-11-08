@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
 using UltraMapper.Internals;
@@ -13,7 +14,7 @@ namespace UltraMapper.Json
 {
     public static class JsonMapper
     {
-        private static readonly Mapper _mapper = new( cfg =>
+        public static readonly Mapper Mapper = new( cfg =>
         {
             cfg.IsReferenceTrackingEnabled = false;
             cfg.ReferenceBehavior = ReferenceBehaviors.CREATE_NEW_INSTANCE;
@@ -43,10 +44,9 @@ namespace UltraMapper.Json
                 new SimpleParamExpressionBuilder(),
             } );
         } );
-
-        public static Mapper Mapper => _mapper;
     }
 
+    //doesn't handle arrays
     public sealed class JsonSerializer<T>
         where T : class, new()
     {
@@ -67,7 +67,7 @@ namespace UltraMapper.Json
             Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
 
-            Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
+            //Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
 
             _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
             _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
@@ -92,7 +92,7 @@ namespace UltraMapper.Json
         }
 
         public string Serialize( T instance )
-        { 
+        {
             _jsonString.Json.Clear();
             _referenceTracker.Clear();
 
@@ -113,14 +113,14 @@ namespace UltraMapper.Json
         public static Mapper Mapper = JsonMapper.Mapper;
 
         private Type lastMapType = null;
-        private UltraMapperDelegate _map;
+        private UltraMapperDelegate _desMap;
 
         public JsonSerializer()
         {
             Mapper.Config.MapTypes<string, DateTime>(
                 s => DateTime.Parse( s, Culture ) );
 
-            Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
+            //Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
             Mapper.Config.MapTypes<SimpleParam, string>( s => s.Value );
         }
 
@@ -136,15 +136,15 @@ namespace UltraMapper.Json
         //    return this.DeserializeInternal( parsedJson, new T() );
         //}
 
-        public T Deserialize<T>( string str )
+        public T Deserialize<T>( string str ) 
         {
             var parsedContent = this.Parser.Parse( str );
-
+            
             T instance;
 
-            if( typeof( T ).IsArray )
+            if(typeof( T ).IsArray)
             {
-                var arrayLength = ((ArrayParam)parsedContent).Items.Count;
+                var arrayLength = ((ArrayParam)parsedContent).Count();
                 instance = InstanceFactory.CreateObject<int, T>( arrayLength );
             }
             else instance = InstanceFactory.CreateObject<T>();
@@ -159,19 +159,16 @@ namespace UltraMapper.Json
             return DeserializeInternal( parsedJson, instance );
         }
 
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         private T DeserializeInternal<T>( IParsedParam parsedJson, T instance )
         {
-            if( lastMapType != typeof( T ) )
+            if(lastMapType != typeof( T ))
             {
                 lastMapType = typeof( T );
-
-                if( typeof( T ).IsEnumerable() && !typeof( T ).IsBuiltIn( true ) )
-                    _map = Mapper.Config[ typeof( ArrayParam ), typeof( T ) ].MappingFunc;
-                else
-                    _map = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
+                _desMap = Mapper.Config[ parsedJson.GetType(), typeof( T ) ].MappingFunc;
             }
 
-            return (T)_map( _referenceTracker, parsedJson, instance );
+            return (T)_desMap( _referenceTracker, parsedJson, instance );
         }
 
         public string Serialize<T>( T instance )
@@ -179,8 +176,8 @@ namespace UltraMapper.Json
             _jsonString.Json.Clear();
             _referenceTracker.Clear();
 
-            var map = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
-            map( _referenceTracker, instance, _jsonString );
+            var serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
+            serMap( _referenceTracker, instance, _jsonString );
             return _jsonString.Json.ToString();
         }
     }

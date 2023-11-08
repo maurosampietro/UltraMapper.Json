@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UltraMapper.Parsing;
+﻿using UltraMapper.Parsing;
 
 namespace UltraMapper.Json
 {
     public class JsonParser : IParser
     {
 #if NET5_0_OR_GREATER
-        private readonly IParser Parser = new JsonParserUsingReadonlySpan();
+        private readonly IParser Parser = new JsonParserUsingReadonlySpanAdapter();
 #else
         private readonly IParser Parser = new JsonParserUsingSubstrings();
 #endif

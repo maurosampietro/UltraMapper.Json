@@ -7,9 +7,23 @@
 //namespace UltraMapper.Json
 //{
 //#if NET5_0_OR_GREATER
-//    public class JsonParserUtf8ReadonlySpan : IParser
+//    public class JsonParserUtf8ReadonlySpanAdapter : IParser
 //    {
-//        private enum ParseObjectState { PARAM_NAME, PARAM_VALUE }
+//        public IParsedParam Parse( string text )
+//        {
+//            return new JsonParserUtf8ReadonlySpan( text ).Parse();
+//        }
+//    }
+
+//    /// <summary>
+//    /// La maggior parte del tempo viene perso facendo .ToString() sui parametri.
+//    /// </summary>
+//    /// 
+//    public ref struct JsonParserUtf8ReadonlySpan
+//    {
+//        private readonly ReadOnlySpan<byte> _bytes;
+//        private readonly byte[] _bytesRaw;
+//        private int _idx = 0;
 
 //        private const byte OBJECT_START_SYMBOL = (byte)'{';
 //        private const byte OBJECT_END_SYMBOL = (byte)'}';
@@ -20,60 +34,40 @@
 //        private const byte QUOTE_SYMBOL = (byte)'"';
 //        private const byte ESCAPE_SYMBOL = (byte)'\\';
 
-//        public unsafe IParsedParam Parse( string str )
+//        public JsonParserUtf8ReadonlySpan( string str )
 //        {
-//            var bytes = Encoding.UTF8.GetBytes( str, 0, str.Length );
-//            return Parse( bytes, str );
+//            _bytesRaw = Encoding.UTF8.GetBytes( str );
+//            _bytes = _bytesRaw;
 //        }
 
-//        public IParsedParam Parse( byte[] bytes, string chars )
+//        public IParsedParam Parse()
 //        {
-//            for( int i = 0; true; i++ )
+//            for(; true; _idx++)
 //            {
-//                if( IsWhiteSpace( bytes[ i ] ) )
+//                if(IsWhiteSpace( _bytes[ _idx ] ))
 //                    continue;
 
-//                switch( bytes[ i ] )
+//                switch(_bytes[ _idx ])
 //                {
 //                    case OBJECT_START_SYMBOL:
 //                    {
-//                        i++;
-//                        return ParseObject( bytes, chars, ref i );
+//                        _idx++;
+//                        return ParseObject();
 //                    }
 
 //                    case ARRAY_START_SYMBOL:
 //                    {
-//                        i++;
-//                        return ParseArray( bytes, chars, ref i );
+//                        _idx++;
+//                        return ParseArray();
 //                    }
 
 //                    default:
-//                        throw new Exception( $"Unexpected symbol '{bytes[ i ]}' at position {i}" );
+//                        throw new Exception( $"Unexpected symbol '{_bytes[ _idx ]}' at position {_idx}" );
 //                }
 //            }
 
 //            throw new Exception( $"Expected symbol '{OBJECT_START_SYMBOL}' or '{ARRAY_START_SYMBOL}'" );
 //        }
-
-//        private unsafe ReadOnlySpan<byte> ReadonlySpanByteFromString( string str )
-//        {
-//            fixed( char* bText = str )
-//                return new ReadOnlySpan<byte>( (byte*)bText, str.Length * 2 );
-//        }
-
-//        private unsafe ReadOnlySpan<char> ReadonlySpanCharFromString( string str )
-//        {
-//            fixed( char* bText = str )
-//                return new ReadOnlySpan<char>( bText, str.Length );
-//        }
-
-//        private const byte c1 = (byte)' ';
-//        private const byte c2 = (byte)'\x0009';
-//        private const byte c3 = (byte)'\x000d';
-//        private const byte c4 = (byte)'\x00a0';
-//        private const byte c5 = (byte)'\x0085';
-
-//        public const int MIN_CAPACITY = 8;
 
 //        [MethodImpl( MethodImplOptions.AggressiveInlining )]
 //        public static bool IsWhiteSpace( byte c )
@@ -88,51 +82,52 @@
 //            // U+000d = <control> CARRIAGE RETURN
 //            // U+0085 = <control> NEXT LINE
 //            // U+00a0 = NO-BREAK SPACE
-//            return (c == c1) || (c >= c2 && c <= c3) || c == c4 || c == c5;
+//            return c is 32 or 9 or 10 or 13;
 //        }
 
-//        private ComplexParam ParseObject( byte[] bytes, string text, ref int i )
+//        private ParseJsonComplexParam ParseObject()
 //        {
-//            var parsedParams = new List<IParsedParam>( MIN_CAPACITY );
-//            string _paramName = String.Empty;
+//            var cp = new ParseJsonComplexParam( _bytesRaw );
+
+//            var parsedParams = new List<ParseJsonComplexParam>();
+//            (int startIndex, int endIndex) _paramName;
 
 //        label:
 
-//            while( IsWhiteSpace( bytes[ i ] ) )
-//                i++;
+//            while(IsWhiteSpace( _bytes[ _idx ] ))
+//                _idx++;
 
-//            if( bytes[ i ] == OBJECT_END_SYMBOL )
+//            if(_bytes[ _idx ] == OBJECT_END_SYMBOL)
 //            {
-//                return new ComplexParam()
-//                {
-//                    Name = _paramName.ToString(),
-//                    SubParams = parsedParams
-//                };
+//                cp.NameStartIndex = _paramName.startIndex;
+//                cp.NameEndIndex = _paramName.endIndex;
+
+//                return cp;
 //            }
 
-//            _paramName = ParseName( bytes, text, ref i );
+//            _paramName = ParseName();
 
-//            while( IsWhiteSpace( bytes[ i ] ) || bytes[ i ] == PARAM_NAME_VALUE_DELIMITER )
-//                i++;
+//            while(IsWhiteSpace( _bytes[ _idx ] ) || _bytes[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
+//                _idx++;
 
 //            int startIndex;
-//            for( ; true; i++ )
+//            for(; true; _idx++)
 //            {
-//                while( IsWhiteSpace( bytes[ i ] ) )
-//                    i++;
+//                while(IsWhiteSpace( _bytes[ _idx ] ))
+//                    _idx++;
 
-//                switch( bytes[ i ] )
+//                switch(_bytes[ _idx ])
 //                {
 //                    case OBJECT_START_SYMBOL:
 //                    {
-//                        i++;
-//                        string paramName2 = _paramName.ToString();
-//                        _paramName = String.Empty;
+//                        _idx++;
+//                        var paramName2 = _paramName;
+//                        _paramName = (0,0);
 
-//                        var result = ParseObject( bytes, text, ref i );
+//                        var result = ParseObject();
 //                        parsedParams.Add( new ComplexParam()
 //                        {
-//                            Name = paramName2,
+//                            //Name = Encoding.UTF8.GetString( paramName2 ),
 //                            SubParams = result.SubParams
 //                        } );
 //                        break;
@@ -149,33 +144,36 @@
 
 //                    case ARRAY_START_SYMBOL:
 //                    {
-//                        i++;
+//                        _idx++;
 
-//                        string paramname2 = _paramName.ToString();
-//                        _paramName = String.Empty;
+//                        var paramname2 = _paramName;
+//                        _paramName = (0,0);
 
-//                        var result = ParseArray( bytes, text, ref i );
-//                        result.Name = paramname2;
+//                        var result = ParseArray();
+//                        //result.Name = Encoding.UTF8.GetString( paramname2 );
 //                        parsedParams.Add( result );
 //                        break;
 //                    }
 
 //                    case PARAMS_DELIMITER:
 //                    {
-//                        i++;
-//                        _paramName = ParseName( bytes, text, ref i );
+//                        _idx++;
+//                        _paramName = ParseName();
 //                        //_paramValue = String.Empty;
 //                        break;
 //                    }
 
 //                    case QUOTE_SYMBOL:
 //                    {
-//                        i++;
+//                        _idx++;
 
-//                        var simpleParam = new SimpleParam()
+//                        var value = ParseQuotation();
+//                        var simpleParam = new ParseJsonComplexParam( _bytesRaw )
 //                        {
-//                            Name = _paramName.ToString(),
-//                            Value = ParseQuotation( bytes, text, ref i )
+//                            ValueStartIndex = value.startIndex,
+//                            ValueEndIndex = value.endIndex
+//                            //Name = Encoding.UTF8.GetString( _paramName ),
+//                            //Value = value.ToArray()
 //                        };
 
 //                        parsedParams.Add( simpleParam );
@@ -184,26 +182,42 @@
 
 //                    default:
 //                    {
-//                        while( IsWhiteSpace( bytes[ i ] ) )
-//                            i++;
+//                        while(IsWhiteSpace( _bytes[ _idx ] ))
+//                            _idx++;
 
-//                        startIndex = i;
-//                        for( ; true; i++ )
+//                        startIndex = _idx;
+//                        for(; true; _idx++)
 //                        {
-//                            if( IsWhiteSpace( bytes[ i ] ) )
+//                            if(IsWhiteSpace( _bytes[ _idx ] ))
 //                                break;
 
-//                            if( bytes[ i ] == PARAMS_DELIMITER )
+//                            if(_bytes[ _idx ] == PARAMS_DELIMITER)
 //                                break;
 //                        }
 
-//                        parsedParams.Add( new SimpleParam()
+//                        //if(_bytes[ startIndex.._idx ].SequenceEqual( NULL ))
+//                        //{
+//                        //    parsedParams.Add( new SimpleParam() { Name = Encoding.UTF8.GetString( _paramName ), Value = null } );
+//                        //}
+//                        //else if(_bytes[ startIndex.._idx ].SequenceEqual( FALSE ))
+//                        //{
+//                        //    parsedParams.Add( new BooleanParam() { Name = Encoding.UTF8.GetString( _paramName ), Value = Boolean.FalseString } );
+//                        //}
+//                        //else if(_bytes[ startIndex.._idx ].SequenceEqual( TRUE ))
+//                        //{
+//                        //    parsedParams.Add( new BooleanParam() { Name = Encoding.UTF8.GetString( _paramName ), Value = Boolean.TrueString } );
+//                        //}
+//                        //else
+//                        //var value = _bytes[ startIndex.._idx ];
+//                        parsedParams.Add( new ParseJsonComplexParam( _bytesRaw )
 //                        {
-//                            Name = _paramName.ToString(),
-//                            Value = text[ startIndex..i ].ToString()
+//                            ValueStartIndex = startIndex,
+//                            ValueEndIndex = _idx
+//                            //Name = Encoding.UTF8.GetString( _paramName ),
+//                            //Value = value
 //                        } );
 
-//                        i++;
+//                        _idx++;
 //                        goto label;
 //                    }
 //                }
@@ -212,22 +226,22 @@
 //            throw new Exception( $"Expected symbol '{OBJECT_END_SYMBOL}'" );
 //        }
 
-//        private ArrayParam ParseArray( byte[] bytes, string text, ref int i )
+//        private ArrayParam ParseArray()
 //        {
 //            var items = new ArrayParam();
 
-//            for( ; true; i++ )
+//            for(; true; _idx++)
 //            {
-//                while( IsWhiteSpace( bytes[ i ] ) )
-//                    i++;
+//                while(IsWhiteSpace( _bytes[ _idx ] ))
+//                    _idx++;
 
-//                switch( bytes[ i ] )
+//                switch(_bytes[ _idx ])
 //                {
 //                    case OBJECT_START_SYMBOL:
 //                    {
-//                        i++;
+//                        _idx++;
 
-//                        var complexParam = ParseObject( bytes, text, ref i );
+//                        var complexParam = ParseObject();
 //                        items.Add( complexParam );
 
 //                        break;
@@ -235,9 +249,9 @@
 
 //                    case ARRAY_START_SYMBOL:
 //                    {
-//                        i++;
+//                        _idx++;
 
-//                        var result = ParseArray( bytes, text, ref i );
+//                        var result = ParseArray();
 //                        items.Add( result );
 
 //                        break;
@@ -245,12 +259,31 @@
 
 //                    case QUOTE_SYMBOL:
 //                    {
-//                        i++;
+//                        _idx++;
 
-//                        items.Add( new SimpleParam()
+//                        var value = ParseQuotation();
+//                        //if(value.SequenceEqual( NULL ))
+//                        //{
+//                        //    items.Add( SimpleParam.ANONYMOUS_NULL );
+//                        //}
+//                        //else if(value.SequenceEqual( FALSE ))
+//                        //{
+//                        //    items.Add( BooleanParam.ANONYMOUS_FALSE );
+//                        //}
+//                        //else if(value.SequenceEqual( TRUE ))
+//                        //{
+//                        //    items.Add( BooleanParam.ANONYMOUS_TRUE );
+//                        //}
+//                        //else
 //                        {
-//                            Value = ParseQuotation( bytes, text, ref i )
-//                        } );
+
+//                            items.Add( new ParseJsonComplexParam( _bytesRaw )
+//                            {
+//                                ValueStartIndex = value.startIndex,
+//                                ValueEndIndex = value.endIndex
+//                                //    Value = value.ToArray()
+//                            } );
+//                        }
 
 //                        break;
 //                    }
@@ -267,12 +300,30 @@
 
 //                    default:
 //                    {
-//                        items.Add( new SimpleParam()
-//                        {
-//                            Value = ParseValue( bytes, text, ref i )
-//                        } );
+//                        var value = ParseValue();
+//                        //if(value.SequenceEqual( NULL ))
+//                        //{
+//                        //    items.Add( SimpleParam.ANONYMOUS_NULL );
+//                        //}
+//                        //else if(value.SequenceEqual( FALSE ))
+//                        //{
+//                        //    items.Add( BooleanParam.ANONYMOUS_FALSE );
+//                        //}
+//                        //else if(value.SequenceEqual( TRUE ))
+//                        //{
+//                        //    items.Add( BooleanParam.ANONYMOUS_TRUE );
+//                        //}
+//                        //else
+//                        //{
+//                            items.Add( new ParseJsonComplexParam( _bytesRaw )
+//                            {
+//                                ValueStartIndex = value.startIndex,
+//                                ValueEndIndex = value.endIndex
+//                                //Value = value.ToArray()
+//                            } );
+//                        //}
 
-//                        i--;
+//                        _idx--;
 
 //                        break;
 //                    }
@@ -283,23 +334,23 @@
 //        }
 
 //        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-//        private string ParseQuotation( byte[] bytes, string text, ref int i )
+//        private (int startIndex, int endIndex) ParseQuotation()
 //        {
 //            bool escapeSymbols = false;
 //            bool unicodeSymbols = false;
 
-//            int startIndex = i;
-//            for( ; true; i++ )
+//            int startIndex = _idx;
+//            for(; true; _idx++)
 //            {
-//                switch( bytes[ i ] )
+//                switch(_bytes[ _idx ])
 //                {
 //                    case ESCAPE_SYMBOL:
 //                    {
-//                        ++i;
+//                        ++_idx;
 
 //                        escapeSymbols = true;
 
-//                        if( bytes[ i ] == 'u' )
+//                        if(_bytes[ _idx ] == 'u')
 //                            unicodeSymbols = true;
 
 //                        break;
@@ -307,35 +358,36 @@
 
 //                    case QUOTE_SYMBOL:
 //                    {
-//                        var quotation = text[ startIndex..i ].ToString();
+//                        //var quotation = _bytes[ startIndex.._idx ];
 
-//                        if( escapeSymbols )
-//                        {
-//                            quotation = quotation
-//                                .Replace( @"\b", "\b" )
-//                                .Replace( @"\f", "\f" )
-//                                .Replace( @"\n", "\n" )
-//                                .Replace( @"\r", "\r" )
-//                                .Replace( @"\t", "\t" )
-//                                .Replace( @"\\", "\\" )
-//                                .Replace( @"\""", "\"" );
+//                        //if(escapeSymbols)
+//                        //{
+//                        //    quotation = quotation
+//                        //        .Replace( @"\b", "\b" )
+//                        //        .Replace( @"\f", "\f" )
+//                        //        .Replace( @"\n", "\n" )
+//                        //        .Replace( @"\r", "\r" )
+//                        //        .Replace( @"\t", "\t" )
+//                        //        .Replace( @"\\", "\\" )
+//                        //        .Replace( @"\""", "\"" );
 
-//                            if( unicodeSymbols )
-//                            {
-//                                int unicodeCharIndex = quotation.IndexOf( @"\u" );
-//                                while( unicodeCharIndex > -1 )
-//                                {
-//                                    string unicodeLiteral = quotation.Substring( unicodeCharIndex, 6 );
-//                                    int code = Int32.Parse( unicodeLiteral.Substring( 2 ), System.Globalization.NumberStyles.HexNumber );
-//                                    string unicodeChar = Char.ConvertFromUtf32( code );
-//                                    quotation = quotation.Replace( unicodeLiteral, unicodeChar );
+//                        //    if(unicodeSymbols)
+//                        //    {
+//                        //        int unicodeCharIndex = quotation.IndexOf( @"\u" );
+//                        //        while(unicodeCharIndex > -1)
+//                        //        {
+//                        //            string unicodeLiteral = quotation.Substring( unicodeCharIndex, 6 );
+//                        //            int code = Int32.Parse( unicodeLiteral.Substring( 2 ), System.Globalization.NumberStyles.HexNumber );
+//                        //            string unicodeChar = Char.ConvertFromUtf32( code );
+//                        //            quotation = quotation.Replace( unicodeLiteral, unicodeChar );
 
-//                                    unicodeCharIndex = quotation.IndexOf( @"\u" );
-//                                }
-//                            }
-//                        }
+//                        //            unicodeCharIndex = quotation.IndexOf( @"\u" );
+//                        //        }
+//                        //    }
+//                        //}
 
-//                        return quotation;
+//                        //return quotation;
+//                        return (startIndex, _idx);
 //                    }
 //                }
 //            }
@@ -343,29 +395,33 @@
 //            throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
 //        }
 
-//        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-//        private string ParseValue( byte[] bytes, string text, ref int i )
-//        {
-//            int startIndex = i;
+//        private static byte[] NULL = "null"u8.ToArray();
+//        private static byte[] TRUE = "true"u8.ToArray();
+//        private static byte[] FALSE = "false"u8.ToArray();
 
-//            while( IsWhiteSpace( bytes[ i ] ) )
+//        [MethodImpl( MethodImplOptions.AggressiveInlining )]
+//        private (int startIndex, int endIndex) ParseValue()
+//        {
+//            int startIndex = _idx;
+
+//            while(IsWhiteSpace( _bytes[ _idx ] ))
 //            {
 //                startIndex++;
-//                i++;
+//                _idx++;
 //            }
 
-//            for( ; true; i++ )
+//            for(; true; _idx++)
 //            {
-//                if( IsWhiteSpace( bytes[ i ] ) )
-//                    return text[ startIndex..i ].ToString();
+//                if(IsWhiteSpace( _bytes[ _idx ] ))
+//                    return (startIndex, _idx);
 
-//                switch( bytes[ i ] )
+//                switch(_bytes[ _idx ])
 //                {
 //                    case PARAMS_DELIMITER:
 //                    case OBJECT_END_SYMBOL:
 //                    case ARRAY_END_SYMBOL:
 //                    {
-//                        return text[ startIndex..i ].ToString();
+//                        return (startIndex, _idx);
 //                    }
 //                }
 //            }
@@ -374,48 +430,46 @@
 //        }
 
 //        [MethodImpl( MethodImplOptions.AggressiveInlining )]
-//        private string ParseName( byte[] bytes, string text, ref int i )
+//        private (int startIndex, int endIndex) ParseName()
 //        {
-//            while( IsWhiteSpace( bytes[ i ] ) )
-//                i++;
+//            while(IsWhiteSpace( _bytes[ _idx ] ))
+//                _idx++;
 
-//            string _paramName;
-
-//            switch( bytes[ i ] )
+//            switch(_bytes[ _idx ])
 //            {
 //                case QUOTE_SYMBOL:
 
-//                    i++;
-//                    _paramName = ParseQuotation( bytes, text, ref i );
+//                    _idx++;
+//                    var result = ParseQuotation();
 
-//                    for( i++; true; i++ )
+//                    for(_idx++; true; _idx++)
 //                    {
-//                        if( bytes[ i ] == PARAM_NAME_VALUE_DELIMITER )
+//                        if(_bytes[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
 //                            break;
 //                    }
 
-//                    return _paramName.ToString();
+//                    return result;
 
 //                default:
 //                {
-//                    int startIndex = i;
-//                    for( ; true; i++ )
+//                    int startIndex = _idx;
+//                    for(; true; _idx++)
 //                    {
-//                        if( IsWhiteSpace( bytes[ i ] ) )
+//                        if(IsWhiteSpace( _bytes[ _idx ] ))
 //                        {
-//                            _paramName = text[ startIndex..i ].ToString();
+//                            var result2 = (startIndex, _idx);
 
-//                            for( i++; true; i++ )
+//                            for(_idx++; true; _idx++)
 //                            {
-//                                if( bytes[ i ] == PARAM_NAME_VALUE_DELIMITER )
+//                                if(_bytes[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
 //                                    break;
 //                            }
 
-//                            return _paramName.ToString();
+//                            return result2;
 //                        }
 
-//                        if( bytes[ i ] == PARAM_NAME_VALUE_DELIMITER )
-//                            return text[ startIndex..i ].ToString();
+//                        if(_bytes[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
+//                            return (startIndex, _idx);
 //                    }
 //                }
 //            }

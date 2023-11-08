@@ -7,8 +7,9 @@ using UltraMapper.Parsing;
 namespace UltraMapper.Json.Benchmarks
 {
     //[SimpleJob( RuntimeMoniker.Net472, baseline: true )]
-    [SimpleJob( RuntimeMoniker.Net50 )]
-    //[SimpleJob( RuntimeMoniker.Net60 )]
+    //[SimpleJob( RuntimeMoniker.Net48 )]
+    [SimpleJob( RuntimeMoniker.Net70 )]
+    //[SimpleJob( RuntimeMoniker.Net80 )]
     public class JsonParsersComplexObjectBenchmark
     {
         public class Item
@@ -33,7 +34,7 @@ namespace UltraMapper.Json.Benchmarks
         static string json = @"
 		{
 			""id"": ""0003"",
-			""ppu"": ""0.55"",
+			""ppu"": ""55"",
 					
 			""batters"":
 			{
@@ -52,67 +53,67 @@ namespace UltraMapper.Json.Benchmarks
 		}
 		";
 
-        private static readonly JsonSerializer<Item> jsonParser = new JsonSerializer<Item>();
+        private static JsonSerializer<Item> jsonParser;
 
         [GlobalSetup]
         public void Setup()
         {
-
+            jsonParser = new JsonSerializer<Item>(); 
         }
 
-
-        [Benchmark]
-        public void ManualMapping()
-        {
-            var Parser = new JsonParser();
-            var parsedContent = (ComplexParam)Parser.Parse( json );
-
-            Item result = new Item();
-
-            foreach( var item in parsedContent.SubParams )
-            {
-                switch( item.Name )
-                {
-                    case "ppu": result.ppu = ((SimpleParam)item).Value; break;
-                    case "id": result.id = ((SimpleParam)item).Value; break;
-                    case "batters":
-                    {
-                        result.batters = new Batters();
-
-                        foreach( var battersItems in ((ComplexParam)item).SubParams )
-                        {
-                            result.batters.batter = new List<Ingredient>();
-
-                            foreach( ComplexParam bat in ((ArrayParam)battersItems).Items )
-                            {
-                                var newBatter = new Ingredient();
-
-                                foreach( var subBat in bat.SubParams )
-                                {
-                                    switch( subBat.Name )
-                                    {
-                                        case "id": newBatter.id = ((SimpleParam)subBat).Value; break;
-                                        case "type": newBatter.type = ((SimpleParam)subBat).Value; break;
-                                    }
-                                }
-
-                                result.batters.batter.Add( newBatter );
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
 
         [Benchmark]
         public void UltraMapper() => jsonParser.Deserialize( json );
 
-        [Benchmark]
-        public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Item>( json );
+        //[Benchmark]
+        //public void ManualMapping()
+        //{
+        //    var Parser = new JsonParser();
+        //    var parsedContent = (ComplexParam)Parser.Parse( json );
+
+        //    Item result = new Item();
+
+        //    foreach(var item in parsedContent.SubParams)
+        //    {
+        //        switch(item.Name)
+        //        {
+        //            case "ppu": result.ppu = ((SimpleParam)item).Value; break;
+        //            case "id": result.id = ((SimpleParam)item).Value; break;
+        //            case "batters":
+        //            {
+        //                result.batters = new Batters();
+
+        //                foreach(var battersItems in ((ComplexParam)item).SubParams)
+        //                {
+        //                    result.batters.batter = new List<Ingredient>();
+
+        //                    foreach(ComplexParam bat in ((ArrayParam)battersItems).Complex)
+        //                    {
+        //                        var newBatter = new Ingredient();
+
+        //                        foreach(var subBat in bat.SubParams)
+        //                        {
+        //                            switch(subBat.Name)
+        //                            {
+        //                                case "id": newBatter.id = ((SimpleParam)subBat).Value; break;
+        //                                case "type": newBatter.type = ((SimpleParam)subBat).Value; break;
+        //                            }
+        //                        }
+
+        //                        result.batters.batter.Add( newBatter );
+        //                    }
+        //                }
+
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
 
         //[Benchmark]
+        //public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Item>( json );
+
+        ////[Benchmark]
         //public void Newtonsoft() => JsonConvert.DeserializeObject<Item>( json );
 
         //[Benchmark]
