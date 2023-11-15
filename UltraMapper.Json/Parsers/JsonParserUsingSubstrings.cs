@@ -161,7 +161,7 @@ namespace UltraMapper.Json
                         i++;
 
                         var result = ParseArray( text, ref i );
-                        items.Arrays.Add( result );
+                        items.Array.Add( result );
 
                         break;
                     }
@@ -170,7 +170,7 @@ namespace UltraMapper.Json
                     {
                         i++;
 
-                        items.Simples.Add( new SimpleParam()
+                        items.Simple.Add( new SimpleParam()
                         {
                             Value = ParseQuotation( text, ref i )
                         } );
@@ -211,7 +211,7 @@ namespace UltraMapper.Json
                                 sp.Value = value;
                         }
 
-                        items.Simples.Add( sp );
+                        items.Simple.Add( sp );
                         i--;
                         break;
                     }

@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using UltraMapper.Parsing;
+using UltraMapper.Parsing.Parameters2;
+using UltraMapper.Parsing.Parameters3;
 
 namespace UltraMapper.Json.Tests.MapperTests
 {
@@ -248,57 +250,57 @@ namespace UltraMapper.Json.Tests.MapperTests
         //]";
 
         //         var parser = new JsonParser();
-        //         var result = (ArrayParam)parser.Parse( inputJson );
+        //         var result = (ArrayParam2)parser.Parse( inputJson );
 
         //         Assert.IsTrue( result.Items.Count == 1 );
 
-        //         var complexParam = (ComplexParam)result.Items[ 0 ];
+        //         var complexParam = (ComplexParam2)result.Items[ 0 ];
         //         Assert.IsTrue( complexParam.SubParams.Length == 4 );
 
-        //         Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Name == "id" );
-        //         Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 0 ]).Value == "0003" );
+        //         Assert.IsTrue( ((SimpleParam2)complexParam.SubParams[ 0 ]).Name == "id" );
+        //         Assert.IsTrue( ((SimpleParam2)complexParam.SubParams[ 0 ]).Value == "0003" );
 
-        //         Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 1 ]).Name == "ppu" );
-        //         Assert.IsTrue( ((SimpleParam)complexParam.SubParams[ 1 ]).Value == "0.55" );
+        //         Assert.IsTrue( ((SimpleParam2)complexParam.SubParams[ 1 ]).Name == "ppu" );
+        //         Assert.IsTrue( ((SimpleParam2)complexParam.SubParams[ 1 ]).Value == "0.55" );
 
-        //         var subComplexParam = (ComplexParam)complexParam.SubParams[ 2 ];
-        //         Assert.IsTrue( subComplexParam.Name == "batters" );
+        //         var subComplexParam2 = (ComplexParam2)complexParam.SubParams[ 2 ];
+        //         Assert.IsTrue( subComplexParam2.Name == "batters" );
 
-        //         var subArray = (ArrayParam)subComplexParam.SubParams[ 0 ];
+        //         var subArray = (ArrayParam2)subComplexParam2.SubParams[ 0 ];
         //         Assert.IsTrue( subArray.Items.Count == 2 );
         //         Assert.IsTrue( subArray.Name == "batter" );
 
-        //         var complexSubArrayItem1 = (ComplexParam)subArray.Items[ 0 ];
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 0 ]).Name == "id" );
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 0 ]).Value == "1001" );
+        //         var complexSubArrayItem1 = (ComplexParam2)subArray.Items[ 0 ];
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem1.SubParams[ 0 ]).Name == "id" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem1.SubParams[ 0 ]).Value == "1001" );
 
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 1 ]).Name == "type" );
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem1.SubParams[ 1 ]).Value == "Regular" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem1.SubParams[ 1 ]).Name == "type" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem1.SubParams[ 1 ]).Value == "Regular" );
 
-        //         var complexSubArrayItem2 = (ComplexParam)subArray.Items[ 1 ];
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 0 ]).Name == "id" );
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 0 ]).Value == "1002" );
+        //         var complexSubArrayItem2 = (ComplexParam2)subArray.Items[ 1 ];
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem2.SubParams[ 0 ]).Name == "id" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem2.SubParams[ 0 ]).Value == "1002" );
 
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 1 ]).Name == "type" );
-        //         Assert.IsTrue( ((SimpleParam)complexSubArrayItem2.SubParams[ 1 ]).Value == "Chocolate" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem2.SubParams[ 1 ]).Name == "type" );
+        //         Assert.IsTrue( ((SimpleParam2)complexSubArrayItem2.SubParams[ 1 ]).Value == "Chocolate" );
 
-        //         var subArray2 = (ArrayParam)complexParam.SubParams[ 3 ];
+        //         var subArray2 = (ArrayParam2)complexParam.SubParams[ 3 ];
         //         Assert.IsTrue( subArray2.Items.Count == 2 );
         //         Assert.IsTrue( subArray2.Name == "toppings" );
 
-        //         var complexArrayItem1 = (ComplexParam)subArray2.Items[ 0 ];
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 0 ]).Name == "id" );
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 0 ]).Value == "5001" );
+        //         var complexArrayItem1 = (ComplexParam2)subArray2.Items[ 0 ];
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem1.SubParams[ 0 ]).Name == "id" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem1.SubParams[ 0 ]).Value == "5001" );
 
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 1 ]).Name == "type" );
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem1.SubParams[ 1 ]).Value == "None" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem1.SubParams[ 1 ]).Name == "type" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem1.SubParams[ 1 ]).Value == "None" );
 
-        //         var complexArrayItem2 = (ComplexParam)subArray2.Items[ 1 ];
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 0 ]).Name == "id" );
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 0 ]).Value == "5002" );
+        //         var complexArrayItem2 = (ComplexParam2)subArray2.Items[ 1 ];
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem2.SubParams[ 0 ]).Name == "id" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem2.SubParams[ 0 ]).Value == "5002" );
 
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Name == "type" );
-        //         Assert.IsTrue( ((SimpleParam)complexArrayItem2.SubParams[ 1 ]).Value == "Glazed" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem2.SubParams[ 1 ]).Name == "type" );
+        //         Assert.IsTrue( ((SimpleParam2)complexArrayItem2.SubParams[ 1 ]).Value == "Glazed" );
         //     }
 
         //     [TestMethod]
@@ -307,9 +309,9 @@ namespace UltraMapper.Json.Tests.MapperTests
         //         string inputJson = @"{ param:""}{\\][\"",:""}";
 
         //         var parser = new JsonParser();
-        //         var result = (ComplexParam)parser.Parse( inputJson );
+        //         var result = (ComplexParam2)parser.Parse( inputJson );
 
-        //         var param = (SimpleParam)result.SubParams[ 0 ];
+        //         var param = (SimpleParam2)result.SubParams[ 0 ];
 
         //         Assert.IsTrue( param.Name == "param" );
         //         Assert.IsTrue( param.Value == @"}{\]["",:" );
@@ -321,9 +323,9 @@ namespace UltraMapper.Json.Tests.MapperTests
         //         string inputJson = @"{param:""\""\\\/\b\f\n\r\t""}";
 
         //         var parser = new JsonParser();
-        //         var result = (ComplexParam)parser.Parse( inputJson );
+        //         var result = (ComplexParam2)parser.Parse( inputJson );
 
-        //         var param = (SimpleParam)result.SubParams[ 0 ];
+        //         var param = (SimpleParam2)result.SubParams[ 0 ];
 
         //         Assert.IsTrue( param.Name == "param" );
         //         Assert.IsTrue( param.Value == "\"\\/\b\f\n\r\t" );
@@ -335,9 +337,9 @@ namespace UltraMapper.Json.Tests.MapperTests
         //         string inputJson = @"{param:""\u0030\u0031""}";
 
         //         var parser = new JsonParser();
-        //         var result = (ComplexParam)parser.Parse( inputJson );
+        //         var result = (ComplexParam2)parser.Parse( inputJson );
 
-        //         var param = (SimpleParam)result.SubParams[ 0 ];
+        //         var param = (SimpleParam2)result.SubParams[ 0 ];
 
         //         Assert.IsTrue( param.Name == "param" );
         //         Assert.IsTrue( param.Value == "\u0030\u0031" );
@@ -349,7 +351,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         //    string inputJson = @"{}";
 
         //    var parser = new JsonParser();
-        //    var result = (ComplexParam)parser.Parse( inputJson );
+        //    var result = (ComplexParam2)parser.Parse( inputJson );
 
         //    Assert.IsTrue( result != null );
         //    Assert.IsTrue( result.Name == String.Empty );
@@ -365,7 +367,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         //    }";
 
         //    var parser = new JsonParser();
-        //    var result = (ComplexParam)parser.Parse( inputJson );
+        //    var result = (ComplexParam2)parser.Parse( inputJson );
         //}
 
         //[TestMethod]
@@ -395,34 +397,34 @@ namespace UltraMapper.Json.Tests.MapperTests
         //    Assert.IsTrue( arrayParam.Items.Count == 0 );
         //}
 
-        //[TestMethod]
-        //public void SubArrays()
-        //{
-        //    string inputJson = @"
-        //    [
-        //        [1,2], [3,4], [5,6]
-        //    ]";
+        [TestMethod]
+        public void SubArrays()
+        {
+            string inputJson = @"
+            [
+                [1,2], [3,4], [5,6]
+            ]";
 
-        //    var parser = new JsonParser();
-        //    var result = (ArrayParam)parser.Parse( inputJson );
+            var parser = new JsonParser();
+            var result = (ArrayParam2)parser.Parse( inputJson );
 
-        //    Assert.IsTrue( result.Items.Count == 3 );
+            Assert.IsTrue( result.Count == 3 );
 
-        //    var item1 = (ArrayParam)result[ 0 ];
-        //    Assert.IsTrue( item1.Items.Count == 2 );
-        //    Assert.IsTrue( ((SimpleParam)item1[ 0 ]).Value == "1" );
-        //    Assert.IsTrue( ((SimpleParam)item1[ 1 ]).Value == "2" );
+            var item1 = result.Array[ 0 ];
+            Assert.IsTrue( item1.Count == 2 );
+            Assert.IsTrue( item1.Simple[ 0 ].Value == "1" );
+            Assert.IsTrue( item1.Simple[ 1 ].Value == "2" );
 
-        //    var item2 = (ArrayParam)result[ 1 ];
-        //    Assert.IsTrue( item2.Items.Count == 2 );
-        //    Assert.IsTrue( ((SimpleParam)item2[ 0 ]).Value == "3" );
-        //    Assert.IsTrue( ((SimpleParam)item2[ 1 ]).Value == "4" );
+            var item2 = result.Array[ 1 ];
+            Assert.IsTrue( item2.Count == 2 );
+            Assert.IsTrue( item2.Simple[ 0 ].Value == "3" );
+            Assert.IsTrue( item2.Simple[ 1 ].Value == "4" );
 
-        //    var item3 = (ArrayParam)result[ 2 ];
-        //    Assert.IsTrue( item3.Items.Count == 2 );
-        //    Assert.IsTrue( ((SimpleParam)item3[ 0 ]).Value == "5" );
-        //    Assert.IsTrue( ((SimpleParam)item3[ 1 ]).Value == "6" );
-        //}
+            var item3 = result.Array[ 2 ];
+            Assert.IsTrue( item3.Count == 2 );
+            Assert.IsTrue( item3.Simple[ 0 ].Value == "5" );
+            Assert.IsTrue( item3.Simple[ 1 ].Value == "6" );
+        }
     }
 
     [TestCategory( "Mapper deserializing tests" )]
@@ -499,7 +501,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetParamToNullComplexParam()
+        public void SetParamToNullComplexParam2()
         {
             string inputJson = @"
 			{
@@ -521,7 +523,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetArrayParamToNull()
+        public void SetArrayParam2ToNull()
         {
             string inputJson = @"
 			{
@@ -547,7 +549,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetComplexParamArrayItemToNull()
+        public void SetComplexParam2ArrayItemToNull()
         {
             string inputJson = @"
 			{				
@@ -645,7 +647,7 @@ namespace UltraMapper.Json.Tests.MapperTests
         }
 
         [TestMethod]
-        public void SetParamToNullSimpleParam()
+        public void SetParamToNullSimpleParam2()
         {
             string json = @"
 			{
@@ -654,13 +656,13 @@ namespace UltraMapper.Json.Tests.MapperTests
 			}";
 
             var parser = new JsonParser();
-            var result = (ComplexParam)parser.Parse( json );
+            var result = (ComplexParam2)parser.Parse( json );
 
-            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Name == "color" );
-            Assert.IsTrue( ((SimpleParam)result.SubParams[ 0 ]).Value == null );
+            Assert.IsTrue( result.Simple[ 0 ].Name == "color" );
+            Assert.IsTrue( result.Simple[ 0 ].Value == null );
 
-            Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Name == "value" );
-            Assert.IsTrue( ((SimpleParam)result.SubParams[ 1 ]).Value == "null" );
+            Assert.IsTrue( result.Simple[ 1 ].Name == "value" );
+            Assert.IsTrue( result.Simple[ 1 ].Value == "null" );
         }
 
         private class BoolTests

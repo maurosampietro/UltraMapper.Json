@@ -1,20 +1,25 @@
 ﻿#if NET5_0_OR_GREATER
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics;
 using UltraMapper.Parsing;
+using UltraMapper.Parsing.Parameters2;
+using System.Linq;
+using System.Text;
 
 namespace UltraMapper.Json
 {
-    public class JsonParserUsingReadonlySpanAdapter : IParser
+    public sealed class JsonParserUsingReadonlySpanAdapterP2 : IParser
     {
         public IParsedParam Parse( string text )
         {
-            return new JsonParserUsingReadonlySpan( text ).Parse();
+            return new JsonParserUsingReadonlySpanP2( text ).Parse();
         }
     }
 
-    internal ref struct JsonParserUsingReadonlySpan
+    internal ref struct JsonParserUsingReadonlySpanP2
     {
         private readonly string _text;
         private readonly ReadOnlySpan<char> _textSpan;
@@ -33,7 +38,7 @@ namespace UltraMapper.Json
         //private const string FALSE = "false";
         //private const string TRUE = "true";
 
-        public JsonParserUsingReadonlySpan( string text )
+        public JsonParserUsingReadonlySpanP2( string text )
         {
             _text = text;
             _textSpan = text;
@@ -53,15 +58,16 @@ namespace UltraMapper.Json
             }
         }
 
-        private ComplexParam ParseObject()
+        private ComplexParam2 ParseObject()
         {
-            var cp = new ComplexParam()
+            var cp = new ComplexParam2( _text )
             {
-                Name = String.Empty,
+
             };
 
             bool isParsingParamName = true;
-            string paramName = String.Empty;
+            int paramNameStartIndex = _idx;
+            int paramNameLastIndex = -1;
 
             for(; _idx < _textSpan.Length; _idx++)
             {
@@ -75,7 +81,8 @@ namespace UltraMapper.Json
                         _idx++;
 
                         var result = ParseObject();
-                        result.Name = paramName;
+                        result.NameStartIndex = paramNameStartIndex;
+                        result.NameEndIndex = paramNameLastIndex;
 
                         //cp.SubParams.Add( result );
                         cp.Complex.Add( result );
@@ -92,9 +99,11 @@ namespace UltraMapper.Json
                     case ARRAY_START_SYMBOL:
                     {
                         _idx++;
-
                         var result = ParseArray();
-                        result.Name = paramName;
+
+                        result.NameStartIndex = paramNameStartIndex;
+                        result.NameEndIndex = paramNameLastIndex;
+
                         //cp.SubParams.Add( result );
                         cp.Array.Add( result );
 
@@ -112,27 +121,35 @@ namespace UltraMapper.Json
                     {
                         if(isParsingParamName)
                         {
-                            paramName = ParseName();
+                            paramNameLastIndex = ParseName( out paramNameStartIndex );
                             isParsingParamName = false;
                             break;
                         }
                         else
                         {
-                            var sp = new SimpleParam() { Name = paramName };
+                            var sp = new SimpleParam2( _text ) { NameStartIndex = paramNameStartIndex, NameEndIndex = paramNameLastIndex };
 
                             if(_textSpan[ _idx ] == QUOTE_SYMBOL)
                             {
                                 _idx++;
-                                sp.Value = ParseQuotation();
+                                sp.ValueStartIndex = _idx;
+                                sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
+                                sp.ContainsEscapedChars = escape;
+                                sp.ContainsLiteralUnicodeChars = unicode;
                             }
                             else
                             {
                                 sp = ParseValue();
-                                sp.Name = paramName;
+                                sp.NameStartIndex = paramNameStartIndex;
+                                sp.NameEndIndex = paramNameLastIndex;
+                                if(sp.Value == "null")
+                                    sp.ValueStartIndex = -1;
                             }
 
                             //cp.SubParams.Add( sp );
                             cp.Simple.Add( sp );
+                            if(_textSpan[ _idx ] == OBJECT_END_SYMBOL)
+                                return cp;
 
                             isParsingParamName = true;
                             break;
@@ -144,9 +161,9 @@ namespace UltraMapper.Json
             return cp;
         }
 
-        private ArrayParam ParseArray()
+        private ArrayParam2 ParseArray()
         {
-            var items = new ArrayParam();
+            var items = new ArrayParam2( _text );
 
             for(; _idx < _textSpan.Length; _idx++)
             {
@@ -180,8 +197,12 @@ namespace UltraMapper.Json
                     {
                         _idx++;
 
-                        var parseQuotation = ParseQuotation();
-                        items.Simple.Add( new SimpleParam() { Value = parseQuotation } );
+                        var sp = new SimpleParam2( _text );
+                        sp.ValueStartIndex = _idx;
+                        sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
+                        sp.ContainsEscapedChars = escape;
+                        sp.ContainsLiteralUnicodeChars = unicode;
+                        items.Simple.Add( sp );
 
                         break;
                     }
@@ -198,42 +219,53 @@ namespace UltraMapper.Json
 
                     default:
                     {
-                        SimpleParam sp = new SimpleParam();
+                        SimpleParam2 sp = new SimpleParam2( _text );
 
                         if(_textSpan[ _idx ] == QUOTE_SYMBOL)
                         {
                             _idx++;
-                            sp.Value = ParseQuotation();
+                            sp.ValueStartIndex = _idx;
+                            sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
+                            sp.ContainsEscapedChars = escape;
+                            sp.ContainsLiteralUnicodeChars = unicode;
                         }
                         else
                         {
                             sp = ParseValue();
+
+                            if(sp.Value == "null")
+                                sp.ValueStartIndex = -1;
                             //if(sp.Value == null)
                             //    sp = null;
+
                         }
 
                         items.Simple.Add( sp );
-                        _idx--;
+                        if(_textSpan[ _idx ] == ARRAY_END_SYMBOL)
+                            return items;
+
                         break;
                     }
                 }
             }
 
-            throw new Exception( $"Expected symbol '{ARRAY_END_SYMBOL}'" );
+            return items;
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseName()
+        private int ParseName( out int startIndex )
         {
             while(_textSpan[ _idx ].IsWhiteSpace())
                 _idx++;
 
+            startIndex = _idx;
             switch(_textSpan[ _idx ])
             {
                 case QUOTE_SYMBOL:
 
                     _idx++;
-                    string paramName = ParseQuotation();
+                    startIndex = _idx;
+                    int endIndex = ParseQuotation( out bool escape, out bool unicode );
 
                     for(_idx++; true; _idx++)
                     {
@@ -241,14 +273,14 @@ namespace UltraMapper.Json
                             break;
                     }
 
-                    return paramName;
+                    return endIndex;
 
-                case ARRAY_END_SYMBOL: return String.Empty;   //after , we search for a new param name but it might be missing and the element be done.
-                case OBJECT_END_SYMBOL: return String.Empty; //after , we search for a new param name but it might be missing and the element be done.
+                case ARRAY_END_SYMBOL: return -1;   //after , we search for a new param name but it might be missing and the element be done.
+                case OBJECT_END_SYMBOL: return -1; //after , we search for a new param name but it might be missing and the element be done.
 
                 default:
                 {
-                    int startIndex = _idx;
+                    startIndex = _idx;
                     for(; true; _idx++)
                     {
                         int lastNameCharIndex = _idx;
@@ -257,7 +289,7 @@ namespace UltraMapper.Json
                             _idx++;
 
                         if(_textSpan[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
-                            return _textSpan[ startIndex..lastNameCharIndex ].ToString();
+                            return lastNameCharIndex;
                     }
                 }
             }
@@ -265,18 +297,18 @@ namespace UltraMapper.Json
 
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private SimpleParam ParseValue()
+        private SimpleParam2 ParseValue()
         {
-            static SimpleParam Getsimplevalue( ReadOnlySpan<char> readOnlySpan )
-            {
-                //if(readOnlySpan.SequenceEqual( "false" ))
-                //    return new SimpleParam() { Value = Boolean.FalseString };
-                //else if(readOnlySpan.SequenceEqual( "true" ))
-                //    return new SimpleParam() { Value = Boolean.TrueString };
-                if(readOnlySpan.SequenceEqual( "null" ))
-                    return new SimpleParam() { Value = null };
-                return new SimpleParam() { Value = readOnlySpan.ToString() };
-            }
+            //static SimpleParam2 Getsimplevalue( ReadOnlySpan<char> readOnlySpan )
+            //{
+            //    //if(readOnlySpan.SequenceEqual( "false" ))
+            //    //    return new SimpleParam() { Value = Boolean.FalseString };
+            //    //else if(readOnlySpan.SequenceEqual( "true" ))
+            //    //    return new SimpleParam() { Value = Boolean.TrueString };
+            //    if(readOnlySpan.SequenceEqual( "null" ))
+            //        return new SimpleParam2(_text) { Value = null };
+            //    return new SimpleParam2(_Text) { Value = readOnlySpan.ToString() };
+            //}
 
             int startIndex = _idx;
 
@@ -287,7 +319,10 @@ namespace UltraMapper.Json
                     case QUOTE_SYMBOL:
                     {
                         _idx++;
-                        return new SimpleParam() { Value = ParseQuotation() };
+                        var sp = new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = ParseQuotation( out bool escape, out bool unicode ) };
+                        sp.ContainsEscapedChars = escape;
+                        sp.ContainsLiteralUnicodeChars = unicode;
+                        return sp;
                     }
 
                     default:
@@ -297,11 +332,13 @@ namespace UltraMapper.Json
                             startIndex++;
                             continue;
                         }
-
+                        _idx++;
                         for(; _idx < _textSpan.Length; _idx++)
                         {
                             if(_textSpan[ _idx ].IsWhiteSpace())
-                                return Getsimplevalue( _textSpan[ startIndex.._idx ] );
+                            {
+                                return new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = _idx };
+                            }
 
                             switch(_textSpan[ _idx ])
                             {
@@ -309,7 +346,7 @@ namespace UltraMapper.Json
                                 case OBJECT_END_SYMBOL:
                                 case ARRAY_END_SYMBOL:
                                 {
-                                    return Getsimplevalue( _textSpan[ startIndex.._idx ] );
+                                    return new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = _idx };
                                 }
                             }
                         }
@@ -322,10 +359,10 @@ namespace UltraMapper.Json
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private string ParseQuotation()
+        private int ParseQuotation( out bool escapeSymbols, out bool unicodeSymbols )
         {
-            bool escapeSymbols = false;
-            bool unicodeSymbols = false;
+            escapeSymbols = false;
+            unicodeSymbols = false;
 
             int startIndex = _idx;
             for(; true; _idx++)
@@ -346,52 +383,7 @@ namespace UltraMapper.Json
 
                     case QUOTE_SYMBOL:
                     {
-                        if(escapeSymbols)
-                        {
-                            var quotation = _textSpan[ startIndex.._idx ];
-                            if(unicodeSymbols)
-                            {
-                                StringBuilder sb = new StringBuilder();
-                                var unicodeQuotation = _textSpan[ startIndex.._idx ];
-
-                                int unicodeCharIndex = unicodeQuotation.IndexOf( @"\u" );
-                                while(unicodeCharIndex > -1)
-                                {
-                                    sb.Append( unicodeQuotation[ 0..unicodeCharIndex ] );
-
-                                    var unicodeLiteral = unicodeQuotation.Slice( unicodeCharIndex, 6 );
-                                    int symbolCode = Int32.Parse( unicodeLiteral[ 2.. ], System.Globalization.NumberStyles.HexNumber );
-                                    var unicodeChar = Char.ConvertFromUtf32( symbolCode );
-
-                                    sb.Append( unicodeChar );
-
-                                    unicodeQuotation = unicodeQuotation[ (unicodeCharIndex + 6).. ];
-                                    unicodeCharIndex = unicodeQuotation.IndexOf( @"\u" );
-                                }
-
-                                return sb.ToString()
-                                    .Replace( @"\b", "\b" )
-                                    .Replace( @"\f", "\f" )
-                                    .Replace( @"\n", "\n" )
-                                    .Replace( @"\r", "\r" )
-                                    .Replace( @"\t", "\t" )
-                                    .Replace( @"\\", "\\" )
-                                    .Replace( @"\""", "\"" );
-                            }
-
-                            return quotation.ToString()
-                                .Replace( @"\b", "\b" )
-                                .Replace( @"\f", "\f" )
-                                .Replace( @"\n", "\n" )
-                                .Replace( @"\r", "\r" )
-                                .Replace( @"\t", "\t" )
-                                .Replace( @"\\", "\\" )
-                                .Replace( @"\""", "\"" );
-                        }
-                        else
-                        {
-                            return _textSpan[ startIndex.._idx ].ToString();
-                        }
+                        return _idx;
                     }
                 }
             }

@@ -23,6 +23,16 @@ namespace UltraMapper.Json.Tests.ParserTests
 
     [TestCategory( "Parser tests" )]
     [TestClass]
+    public class AddWhitespacesAtTheEndTests : JsonParserTests
+    {
+        public AddWhitespacesAtTheEndTests()
+            : base( new AddWhiteSpacesAtTheEndMangler() )
+        {
+        }
+    }
+
+    [TestCategory( "Parser tests" )]
+    [TestClass]
     public class AddWhitespacesBeforeSpecialCharsTests : JsonParserTests
     {
         public AddWhitespacesBeforeSpecialCharsTests()

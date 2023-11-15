@@ -1,20 +1,25 @@
-﻿#if NET5_0_OR_GREATER
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
 using UltraMapper.Parsing;
 using UltraMapper.Parsing.Parameters2;
 
-namespace UltraMapper.Json
+namespace UltraMapper.Json.Parsers
 {
-    public class JsonParserUsingReadonlySpanAdapterP2 : IParser2
+#if NET7_0_OR_GREATER
+    public sealed class JsonParserUsingReadonlySpanAdapterP2AvxSupported : IParser
     {
-        public IParsedParam2 Parse( string text )
+        public IParsedParam Parse( string text )
         {
-            return new JsonParserUsingReadonlySpanP2( text ).Parse();
+            return new JsonParserUsingReadonlySpanP2AvxSupported( text ).Parse();
         }
     }
 
-    internal ref struct JsonParserUsingReadonlySpanP2
+    internal ref struct JsonParserUsingReadonlySpanP2AvxSupported
     {
         private readonly string _text;
         private readonly ReadOnlySpan<char> _textSpan;
@@ -33,17 +38,16 @@ namespace UltraMapper.Json
         //private const string FALSE = "false";
         //private const string TRUE = "true";
 
-        public JsonParserUsingReadonlySpanP2( string text )
+        public JsonParserUsingReadonlySpanP2AvxSupported( string text )
         {
+            text = AVX2Utils.GetStringWithoutWhitespaces( text );
+
             _text = text;
             _textSpan = text;
         }
 
-        public IParsedParam2 Parse()
+        public IParsedParam Parse()
         {
-            while(_textSpan[ _idx ].IsWhiteSpace())
-                _idx++;
-
             switch(_textSpan[ _idx ])
             {
                 case OBJECT_START_SYMBOL: _idx++; return ParseObject();
@@ -66,9 +70,6 @@ namespace UltraMapper.Json
 
             for(; _idx < _textSpan.Length; _idx++)
             {
-                while(_textSpan[ _idx ].IsWhiteSpace())
-                    _idx++;
-
                 switch(_textSpan[ _idx ])
                 {
                     case OBJECT_START_SYMBOL:
@@ -94,8 +95,8 @@ namespace UltraMapper.Json
                     case ARRAY_START_SYMBOL:
                     {
                         _idx++;
-
                         var result = ParseArray();
+
                         result.NameStartIndex = paramNameStartIndex;
                         result.NameEndIndex = paramNameLastIndex;
 
@@ -116,8 +117,7 @@ namespace UltraMapper.Json
                     {
                         if(isParsingParamName)
                         {
-                            paramNameStartIndex = _idx;
-                            paramNameLastIndex = ParseName();
+                            paramNameLastIndex = ParseName( out paramNameStartIndex );
                             isParsingParamName = false;
                             break;
                         }
@@ -130,16 +130,22 @@ namespace UltraMapper.Json
                                 _idx++;
                                 sp.ValueStartIndex = _idx;
                                 sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
+                                sp.ContainsEscapedChars = escape;
+                                sp.ContainsLiteralUnicodeChars = unicode;
                             }
                             else
                             {
                                 sp = ParseValue();
                                 sp.NameStartIndex = paramNameStartIndex;
                                 sp.NameEndIndex = paramNameLastIndex;
+                                if(sp.Value == "null")
+                                    sp.ValueStartIndex = -1;
                             }
 
                             //cp.SubParams.Add( sp );
                             cp.Simple.Add( sp );
+                            if(_textSpan[ _idx ] == OBJECT_END_SYMBOL)
+                                return cp;
 
                             isParsingParamName = true;
                             break;
@@ -157,9 +163,6 @@ namespace UltraMapper.Json
 
             for(; _idx < _textSpan.Length; _idx++)
             {
-                if(_textSpan[ _idx ].IsWhiteSpace())
-                    continue;
-
                 switch(_textSpan[ _idx ])
                 {
                     case OBJECT_START_SYMBOL:
@@ -190,7 +193,8 @@ namespace UltraMapper.Json
                         var sp = new SimpleParam2( _text );
                         sp.ValueStartIndex = _idx;
                         sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
-
+                        sp.ContainsEscapedChars = escape;
+                        sp.ContainsLiteralUnicodeChars = unicode;
                         items.Simple.Add( sp );
 
                         break;
@@ -215,37 +219,43 @@ namespace UltraMapper.Json
                             _idx++;
                             sp.ValueStartIndex = _idx;
                             sp.ValueEndIndex = ParseQuotation( out bool escape, out bool unicode );
+                            sp.ContainsEscapedChars = escape;
+                            sp.ContainsLiteralUnicodeChars = unicode;
                         }
                         else
                         {
                             sp = ParseValue();
+
+                            if(sp.Value == "null")
+                                sp.ValueStartIndex = -1;
                             //if(sp.Value == null)
                             //    sp = null;
+
                         }
 
                         items.Simple.Add( sp );
-                        _idx--;
+                        if(_textSpan[ _idx ] == ARRAY_END_SYMBOL)
+                            return items;
+
                         break;
                     }
                 }
             }
 
-            throw new Exception( $"Expected symbol '{ARRAY_END_SYMBOL}'" );
+            return items;
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
-        private int ParseName()
+        private int ParseName( out int startIndex )
         {
-            while(_textSpan[ _idx ].IsWhiteSpace())
-                _idx++;
-
+            startIndex = _idx;
             switch(_textSpan[ _idx ])
             {
                 case QUOTE_SYMBOL:
 
                     _idx++;
-
-                    int endIndex = ParseQuotation(out bool escape, out bool unicode);
+                    startIndex = _idx;
+                    int endIndex = ParseQuotation( out bool escape, out bool unicode );
 
                     for(_idx++; true; _idx++)
                     {
@@ -260,13 +270,10 @@ namespace UltraMapper.Json
 
                 default:
                 {
-                    int startIndex = _idx;
+                    startIndex = _idx;
                     for(; true; _idx++)
                     {
                         int lastNameCharIndex = _idx;
-
-                        while(_textSpan[ _idx ].IsWhiteSpace())
-                            _idx++;
 
                         if(_textSpan[ _idx ] == PARAM_NAME_VALUE_DELIMITER)
                             return lastNameCharIndex;
@@ -274,7 +281,6 @@ namespace UltraMapper.Json
                 }
             }
         }
-
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         private SimpleParam2 ParseValue()
@@ -299,22 +305,17 @@ namespace UltraMapper.Json
                     case QUOTE_SYMBOL:
                     {
                         _idx++;
-                        return new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = ParseQuotation( out bool escape, out bool unicode ) };
+                        var sp = new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = ParseQuotation( out bool escape, out bool unicode ) };
+                        sp.ContainsEscapedChars = escape;
+                        sp.ContainsLiteralUnicodeChars = unicode;
+                        return sp;
                     }
 
                     default:
                     {
-                        if(_textSpan[ _idx ].IsWhiteSpace())
-                        {
-                            startIndex++;
-                            continue;
-                        }
-
+                        _idx++;
                         for(; _idx < _textSpan.Length; _idx++)
                         {
-                            if(_textSpan[ _idx ].IsWhiteSpace())
-                                return new SimpleParam2( _text ) { ValueStartIndex = startIndex, ValueEndIndex = _idx };
-
                             switch(_textSpan[ _idx ])
                             {
                                 case PARAMS_DELIMITER:
@@ -366,5 +367,133 @@ namespace UltraMapper.Json
             throw new Exception( $"Expected symbol '{QUOTE_SYMBOL}'" );
         }
     }
-}
+
+    public class AVX2Utils
+    {
+
+        private static readonly byte[] _valuesToAvoid = new byte[] { 9, 10, 13, 32 };
+        private static readonly Vector256<byte>[] _scalarVectors = _valuesToAvoid.Select( Vector256.Create<byte> ).ToArray();
+
+        //private static IEnumerable<char> RemoveWhitespace( byte[] data )
+        //{
+        //    int dataLength = data.Length;
+        //    int vectorSize = Vector256<byte>.Count;
+        //    int chunks = dataLength / vectorSize; //evito ultimo iterazione
+
+        //    for(int chunkIndex = 0; chunkIndex < chunks; chunkIndex++)
+        //    {
+        //        var dataSpan = new ReadOnlySpan<byte>( data );
+        //        int currentIndex = chunkIndex * vectorSize;
+
+        //        Vector256<byte> dataVector = Vector256.Create( dataSpan.Slice( currentIndex, 32 ) );
+        //        Vector256<byte> resultMask = Vector256<byte>.Zero;
+
+        //        foreach(var scalarValue in _scalarVectors)
+        //            resultMask = Avx2.Or( resultMask, Avx2.CompareEqual( dataVector, scalarValue ) );
+
+        //        // Use permutevar8x32 to gather non-zero elements
+        //        Vector256<byte> shuffledResult = Avx2.Permute2x128( dataVector, Vector256<byte>.AllBitsSet, 0b01 );
+
+
+        //        var shuffled = Avx2.BlendVariable( dataVector, Vector256<byte>.Zero, resultMask );
+        //        for(int i = 0; i < 32; i++)
+        //            yield return (char)shuffled[ i ];
+        //    };
+
+        //    //handle remaining elements not multiple of vector size
+        //    int procIndex = chunks * vectorSize;
+        //    if(procIndex != dataLength - 1)
+        //    {
+        //        var dataSpan = new ReadOnlySpan<byte>( data );
+
+        //        Vector256<byte> dataVector = Vector256<byte>.Zero;
+        //        for(int i = 0; i < dataLength - procIndex; i++)
+        //            dataVector = dataVector.WithElement( i, dataSpan[ i ] );
+
+        //        Vector256<byte> resultMask = Vector256<byte>.Zero;
+
+        //        foreach(var scalarValue in _scalarVectors)
+        //            resultMask = Avx2.Or( resultMask, Avx2.CompareEqual( dataVector, scalarValue ) );
+
+        //        var shuffled = Avx2.BlendVariable( dataVector, Vector256<byte>.Zero, resultMask );
+
+        //        for(int i = 0; i < dataLength - procIndex; i++)
+        //            yield return (char)shuffled[ i ];
+        //    }
+        //}
+
+        private static int[] GetWhitespaceMask( ReadOnlySpan<byte> data )
+        {
+            int dataLength = data.Length;
+            int vectorSize = Vector256<byte>.Count;
+            int chunks = dataLength / vectorSize; //evito ultimo iterazione
+            int rem = (dataLength % vectorSize == 0) ? 0 : 1;
+            int totalMasks = chunks + rem;
+
+            int[] masks = new int[ totalMasks ];
+            for(int chunkIndex = 0; chunkIndex < chunks; chunkIndex++)
+            {
+                int currentIndex = chunkIndex * vectorSize;
+
+                Vector256<byte> dataVector = Vector256.Create( data.Slice( currentIndex, vectorSize ) );
+                Vector256<byte> resultMask = Vector256<byte>.Zero;
+
+                foreach(var scalarValue in _scalarVectors)
+                    resultMask = Avx2.Or( resultMask, Avx2.CompareEqual( dataVector, scalarValue ) );
+
+                masks[chunkIndex]= Avx2.MoveMask( resultMask );
+            };
+
+            //handle remaining elements not multiple of vector size
+            int procIndex = chunks * vectorSize;
+            if(procIndex < dataLength)
+            {
+                Vector256<byte> dataVector = Vector256<byte>.Zero;
+                for(int i = 0; i < dataLength - procIndex; i++)
+                    dataVector = dataVector.WithElement( i, data[ procIndex + i ] );
+
+                Vector256<byte> resultMask = Vector256<byte>.Zero;
+
+                foreach(var scalarValue in _scalarVectors)
+                    resultMask = Avx2.Or( resultMask, Avx2.CompareEqual( dataVector, scalarValue ) );
+
+                masks[totalMasks-1] = Avx2.MoveMask( resultMask );
+            }
+
+            return masks;
+        }
+
+        public static string GetStringWithoutWhitespaces( string text )
+        {
+            int bits = 32;
+
+            ReadOnlySpan<char> charSpan = text.AsSpan();
+
+            // Convert to byte span using UTF-8 encoding
+            Encoding utf8 = Encoding.UTF8;
+            int byteCount = utf8.GetByteCount( charSpan );
+            Span<byte> byteSpan = new byte[ byteCount ];
+            utf8.GetBytes( charSpan, byteSpan );
+
+            // Now you have the data as a ReadOnlySpan<byte>
+            ReadOnlySpan<byte> readOnlyByteSpan = byteSpan;
+
+            var sb = new StringBuilder();
+            var masks = GetWhitespaceMask( readOnlyByteSpan );
+            int m = 0;
+            foreach(var mask in masks)
+            {
+                int offset = m * bits;
+                for(int j = 0; j < bits; j++)
+                {
+                    if(j + offset >= byteCount) break;
+                    if((mask & (1 << j)) == 0)
+                        sb.Append( text[ j + offset ] );
+                }
+                m++;
+            }
+            return sb.ToString();
+        }
+    }
 #endif
+}

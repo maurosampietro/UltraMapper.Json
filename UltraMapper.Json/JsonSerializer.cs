@@ -9,6 +9,8 @@ using UltraMapper.Json.UltraMapper.Extensions;
 using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
 using UltraMapper.Parsing.Extensions;
+using UltraMapper.Parsing.Parameters2;
+using UltraMapper.Parsing.Parameters3;
 
 namespace UltraMapper.Json
 {
@@ -17,6 +19,7 @@ namespace UltraMapper.Json
         public static readonly Mapper Mapper = new( cfg =>
         {
             cfg.IsReferenceTrackingEnabled = false;
+            cfg.IsRuntimeInterfaceAbstractResolutionEnabled = false;
             cfg.ReferenceBehavior = ReferenceBehaviors.CREATE_NEW_INSTANCE;
 
             cfg.Conventions.GetOrAdd<DefaultConvention>( rule =>
@@ -35,6 +38,10 @@ namespace UltraMapper.Json
                 //new SimpleParamExpressionBuilder(),
                 new ArrayParamExpressionBuilder(),
                 new ComplexParamExpressionBuilder(){ CanMapByIndex = false },
+                new ArrayParam2ExpressionBuilder(),
+                //new ArrayParam3ExpressionBuilder(),
+                new ComplexParam2ExpressionBuilder(){ CanMapByIndex = false },
+                //new ComplexParam3ExpressionBuilder(){ CanMapByIndex = false },
                 new ObjectToJsonMapper(),
                 new EnumerableToJsonMapper()
             } );
@@ -42,6 +49,7 @@ namespace UltraMapper.Json
             cfg.Mappers.AddBefore<NullableMapper>( new IMappingExpressionBuilder[]
             {
                 new SimpleParamExpressionBuilder(),
+                new SimpleParam2ExpressionBuilder(),
             } );
         } );
     }
@@ -64,12 +72,17 @@ namespace UltraMapper.Json
 
         public JsonSerializer()
         {
-            Mapper.Config.MapTypes<string, DateTime>(
-                s => DateTime.Parse( s, Culture ) );
+            Mapper.Config.MapTypes<string, DateTime>( s => DateTime.Parse( s, Culture ) );
 
             //Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
 
-            _desMap = Mapper.Config[ typeof( ComplexParam ), typeof( T ) ].MappingFunc;
+            Mapper.Config.MapTypes<SimpleParam2, bool>( s => s.GetBooleanValue() );
+            Mapper.Config.MapTypes<SimpleParam2, int>( s => s.GetIntValue( NumberStyles.Integer, null ) );
+            Mapper.Config.MapTypes<SimpleParam2, float>( s => s.GetFloatValue( NumberStyles.Number, null ) );
+            Mapper.Config.MapTypes<SimpleParam2, string>( s => s.Value );
+
+
+            _desMap = Mapper.Config[ typeof( ComplexParam2 ), typeof( T ) ].MappingFunc;
             _serMap = Mapper.Config[ typeof( T ), typeof( JsonString ) ].MappingFunc;
         }
 
@@ -117,8 +130,12 @@ namespace UltraMapper.Json
 
         public JsonSerializer()
         {
-            Mapper.Config.MapTypes<string, DateTime>(
-                s => DateTime.Parse( s, Culture ) );
+            Mapper.Config.MapTypes<string, DateTime>( s => DateTime.Parse( s, Culture ) );
+
+            Mapper.Config.MapTypes<SimpleParam2, bool>( s => s.GetBooleanValue() );
+            Mapper.Config.MapTypes<SimpleParam2, int>( s => s.GetIntValue( NumberStyles.Integer, null ) );
+            Mapper.Config.MapTypes<SimpleParam2, float>( s => s.GetFloatValue( NumberStyles.Number, null ) );
+            Mapper.Config.MapTypes<SimpleParam2, string>( s => s.Value );
 
             //Mapper.Config.MapTypes<BooleanParam, bool>( s => s.BoolValue );
             Mapper.Config.MapTypes<SimpleParam, string>( s => s.Value );
@@ -136,15 +153,15 @@ namespace UltraMapper.Json
         //    return this.DeserializeInternal( parsedJson, new T() );
         //}
 
-        public T Deserialize<T>( string str ) 
+        public T Deserialize<T>( string str )
         {
             var parsedContent = this.Parser.Parse( str );
-            
+
             T instance;
 
             if(typeof( T ).IsArray)
             {
-                var arrayLength = ((ArrayParam)parsedContent).Count();
+                var arrayLength = ((ArrayParam2)parsedContent).Count;
                 instance = InstanceFactory.CreateObject<int, T>( arrayLength );
             }
             else instance = InstanceFactory.CreateObject<T>();

@@ -25,21 +25,21 @@ namespace UltraMapper.Json.Tests.ParserTests.JsonManglers
             bool isQuoted = false;
             bool isEscaped = false;
 
-            foreach( var c in json )
+            foreach(var c in json)
             {
-                if( c == '"' && !isEscaped ) 
+                if(c == '"' && !isEscaped)
                     isQuoted = !isQuoted;
 
                 isEscaped = c == '\\';
 
-                if( _charsToLookFor.Contains( c ) && !isQuoted )
+                if(_charsToLookFor.Contains( c ) && !isQuoted)
                 {
-                    if( _addCharBefore )
+                    if(_addCharBefore)
                         editedJson.Append( _charToInsert );
 
                     editedJson.Append( c );
 
-                    if( _addCharAfter )
+                    if(_addCharAfter)
                         editedJson.Append( _charToInsert );
                 }
                 else editedJson.Append( c );
