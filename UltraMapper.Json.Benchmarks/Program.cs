@@ -1,6 +1,4 @@
-﻿using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Running;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using BenchmarkDotNet.Running;
 using System;
 
 namespace UltraMapper.Json.Benchmarks

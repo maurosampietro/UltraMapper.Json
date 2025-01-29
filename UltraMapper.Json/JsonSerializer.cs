@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Globalization;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using UltraMapper.Conventions;
 using UltraMapper.Internals;
@@ -10,7 +8,6 @@ using UltraMapper.MappingExpressionBuilders;
 using UltraMapper.Parsing;
 using UltraMapper.Parsing.Extensions;
 using UltraMapper.Parsing.Parameters2;
-using UltraMapper.Parsing.Parameters3;
 
 namespace UltraMapper.Json
 {

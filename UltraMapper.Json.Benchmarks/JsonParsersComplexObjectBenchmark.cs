@@ -65,14 +65,14 @@ namespace UltraMapper.Json.Benchmarks
         [Benchmark]
         public void UltraMapper() => jsonParser.Deserialize( json );
 
-        //[Benchmark]
-        //public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Item>( json );
+        [Benchmark]
+        public void Utf8JsonLibrary() => Utf8Json.JsonSerializer.Deserialize<Item>( json );
 
-        //[Benchmark]
-        //public void Newtonsoft() => JsonConvert.DeserializeObject<Item>( json );
+        [Benchmark]
+        public void Newtonsoft() => JsonConvert.DeserializeObject<Item>( json );
 
-        //[Benchmark]
-        //public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Item>( json );
+        [Benchmark]
+        public void NetJson() => System.Text.Json.JsonSerializer.Deserialize<Item>( json );
 
         //[Benchmark]
         //public void ManualMapping()
